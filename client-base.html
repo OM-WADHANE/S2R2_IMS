@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clients – S2R2 Inventory Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .sidebar.app-sidebar{transition:left .3s ease,width .2s ease,min-width .2s ease,padding .2s ease;}
+    @media (max-width:767px){
+      .sidebar.app-sidebar{position:fixed;z-index:50;left:-100%;top:0;width:16rem;max-width:85vw;min-height:100vh;padding-top:1rem;}
+      .sidebar.app-sidebar.active{left:0;}
+      body.sidebar-collapsed .sidebar.app-sidebar .nav-label,body.sidebar-collapsed .sidebar.app-sidebar .sidebar-title{opacity:1;max-width:none;}
+    }
+    @media (min-width:768px){
+      .app-sidebar{width:16rem;min-width:16rem;flex-shrink:0;overflow:hidden;}
+      .nav-label{transition:opacity .15s ease,max-width .2s ease,margin .2s ease;max-width:12rem;overflow:hidden;white-space:nowrap;}
+      .sidebar-title{transition:opacity .15s ease,max-width .2s ease;max-width:12rem;overflow:hidden;}
+      body.sidebar-collapsed .app-sidebar{width:4.5rem;min-width:4.5rem;padding-left:.5rem;padding-right:.5rem;}
+      body.sidebar-collapsed .app-sidebar .sidebar-title{opacity:0;max-width:0;pointer-events:none;}
+      body.sidebar-collapsed .app-sidebar .nav-label{opacity:0;max-width:0;margin-left:0;}
+      body.sidebar-collapsed .app-sidebar .nav-link{justify-content:center;}
+      body.sidebar-collapsed .app-sidebar .nav-icon{margin-right:0!important;}
+      body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-expanded{display:none!important;}
+      body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-collapsed{display:inline-block!important;}
+      body:not(.sidebar-collapsed) #sidebarCollapse .sidebar-collapse-icon-collapsed{display:none!important;}
+    }
+    #sidebarCollapse .sidebar-collapse-icon-collapsed{display:none!important;}
+    .theme-toggle-btn{display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:.5rem;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;}
+    .theme-toggle-btn:hover{background:rgba(255,255,255,.24);}
+    body.dark-mode{background-color:#0b1220!important;color:#d1d5db;}
+    body.dark-mode .bg-white{background-color:#1f2937!important;color:#d1d5db!important;}
+    body.dark-mode .bg-gray-50,body.dark-mode .bg-gray-100{background-color:#111827!important;color:#d1d5db!important;}
+    body.dark-mode .text-gray-800,body.dark-mode .text-gray-700,body.dark-mode .text-gray-600,body.dark-mode .text-gray-500{color:#d1d5db!important;}
+    body.dark-mode .border,body.dark-mode .border-t,body.dark-mode .border-gray-100,body.dark-mode .border-gray-200{border-color:#374151!important;}
+    body.dark-mode input,body.dark-mode select{background-color:#111827!important;color:#d1d5db!important;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .fade-in{animation:fadeIn .3s ease both;}
+  </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- Header -->
+<header class="bg-blue-600 text-white shadow-md sticky top-0 z-40">
+  <div class="flex items-center justify-between p-3 gap-3">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0">
+      <button id="menuToggle" type="button" class="md:hidden text-white p-2 rounded-lg hover:bg-white/10"><i class="fas fa-bars text-xl"></i></button>
+      <button id="sidebarCollapse" type="button" class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-white/90 hover:bg-white/10 shrink-0">
+        <i class="fas fa-chevron-left text-sm sidebar-collapse-icon-expanded"></i>
+        <i class="fas fa-chevron-right text-sm sidebar-collapse-icon-collapsed"></i>
+      </button>
+      <img src="./s2r2-logo.jpg" alt="S2R2" class="h-8 md:h-10 rounded-lg bg-white object-contain p-0.5 shrink-0">
+    </div>
+    <h1 class="text-sm md:text-lg font-bold text-center flex-1 truncate">Inventory Management System | S2R2</h1>
+    <div class="flex items-center gap-2 shrink-0">
+      <button id="themeToggleBtn" class="theme-toggle-btn"><i id="themeIcon" class="fas fa-moon"></i></button>
+      <div class="relative">
+        <button id="userMenuBtn" class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 rounded-lg px-2 py-1">
+          <i class="fas fa-user-circle text-xl"></i>
+          <span id="usernameDisplay" class="hidden md:inline text-sm font-medium">Admin</span>
+          <i class="fas fa-chevron-down text-xs"></i>
+        </button>
+        <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded-lg shadow-lg z-50">
+          <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-lg text-sm"><i class="fas fa-sign-out-alt mr-2 text-red-500"></i>Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="flex flex-col md:flex-row min-h-screen">
+  <!-- Sidebar -->
+  <aside class="sidebar app-sidebar bg-white p-4 border-r shadow-sm">
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="sidebar-title text-lg font-semibold text-gray-700">Navigation</h2>
+        <button id="closeSidebar" class="md:hidden text-gray-500 p-1 rounded hover:bg-gray-100"><i class="fas fa-times"></i></button>
+      </div>
+      <nav><ul class="space-y-1">
+        <li><a href="index.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700"><i class="fas fa-tachometer-alt nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Dashboard</span></a></li>
+        <li><a href="raw-materials.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700"><i class="fas fa-truck nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Raw Materials</span></a></li>
+        <li><a href="finished-products.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700"><i class="fas fa-cube nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Finished Products</span></a></li>
+        <li><a href="client-base.html" class="nav-link flex items-center p-3 rounded-lg bg-blue-50 text-blue-600 font-medium"><i class="fas fa-users nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Clients</span></a></li>
+      </ul></nav>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-4 md:p-6 space-y-5">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Clients</h2>
+        <p class="text-gray-500 text-sm">Manage your complete client database</p>
+      </div>
+      <button id="addClientBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+        <i class="fas fa-user-plus mr-1"></i> Add Client
+      </button>
+    </div>
+
+    <!-- Filters & Tools -->
+    <div class="bg-white rounded-xl shadow p-4 border border-gray-100">
+      <div class="flex flex-wrap gap-3 items-center">
+        <div class="flex-1 min-w-48 relative">
+          <input id="searchInput" type="text" placeholder="Search clients…"
+            class="w-full pl-9 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm">
+          <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+        </div>
+        <select id="statusFilter" class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option>
+        </select>
+        <button id="exportExcelBtn" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700"><i class="fas fa-file-excel mr-1"></i>Excel</button>
+        <button id="exportCsvBtn" class="px-3 py-2 bg-sky-600 text-white rounded-lg text-sm hover:bg-sky-700"><i class="fas fa-file-csv mr-1"></i>CSV</button>
+        <button id="exportPdfBtn" class="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"><i class="fas fa-file-pdf mr-1"></i>PDF</button>
+        <button id="importBtn" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"><i class="fas fa-file-import mr-1"></i>Import CSV</button>
+        <input id="importInput" type="file" accept=".csv" class="hidden">
+        <button id="printBtn" class="px-3 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-800"><i class="fas fa-print mr-1"></i>Print</button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div id="clientSummary" class="bg-white rounded-xl shadow p-3 text-sm text-gray-600 border border-gray-100"></div>
+
+    <!-- Cards -->
+    <div id="cardsGrid" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+      <div class="px-4 py-3 border-b bg-gray-50 flex items-center gap-2">
+        <i class="fas fa-table text-gray-500"></i>
+        <h3 class="font-semibold text-gray-700">Editable Client Table</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm" id="clientTable">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="text-left px-3 py-3">#</th>
+              <th class="text-left px-3 py-3">Client Name</th>
+              <th class="text-left px-3 py-3">Company</th>
+              <th class="text-left px-3 py-3">Phone</th>
+              <th class="text-left px-3 py-3">Email</th>
+              <th class="text-left px-3 py-3">Address</th>
+              <th class="text-left px-3 py-3">GST No</th>
+              <th class="text-left px-3 py-3">Status</th>
+              <th class="text-left px-3 py-3">Created</th>
+              <th class="text-left px-3 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="clientTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Client Modal -->
+<div id="clientModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 id="modalTitle" class="text-lg font-bold text-gray-800">Add Client</h3>
+      <button id="closeModalBtn" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="grid md:grid-cols-2 gap-3">
+      <input type="hidden" id="clientId">
+      <div><label class="text-xs text-gray-500 mb-1 block">Client Name *</label>
+        <input id="clientName" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required placeholder="Full name"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Company Name</label>
+        <input id="companyName" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Company"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Phone</label>
+        <input id="phone" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Mobile number"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Email</label>
+        <input id="email" type="email" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Email address"></div>
+      <div class="md:col-span-2"><label class="text-xs text-gray-500 mb-1 block">Address</label>
+        <input id="address" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="City / Area"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">GST No</label>
+        <input id="gstNo" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="GST Number"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Status</label>
+        <select id="statusInput" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="active">Active</option><option value="inactive">Inactive</option>
+        </select></div>
+    </div>
+    <div class="flex justify-end gap-2 mt-5">
+      <button id="cancelModalBtn" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm">Cancel</button>
+      <button id="saveClientBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Auth ──
+if(localStorage.getItem('isLoggedIn')!=='true')location.href='login.html';
+document.getElementById('usernameDisplay').textContent=(localStorage.getItem('username')||'User').replace(/\b\w/g,c=>c.toUpperCase());
+
+// ── Sidebar ──
+(function(){
+  var KEY='s2r2-sidebar-collapsed';
+  function applyCollapsed(c){document.body.classList.toggle('sidebar-collapsed',c);}
+  function init(){
+    if(window.matchMedia('(min-width:768px)').matches)applyCollapsed(localStorage.getItem(KEY)==='1');
+    document.getElementById('sidebarCollapse')?.addEventListener('click',function(){var next=!document.body.classList.contains('sidebar-collapsed');applyCollapsed(next);localStorage.setItem(KEY,next?'1':'0');});
+    window.addEventListener('resize',function(){if(!window.matchMedia('(min-width:768px)').matches)document.body.classList.remove('sidebar-collapsed');else applyCollapsed(localStorage.getItem(KEY)==='1');});
+  }
+  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+})();
+document.getElementById('menuToggle')?.addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('active'));
+document.getElementById('closeSidebar')?.addEventListener('click',()=>document.querySelector('.sidebar').classList.remove('active'));
+document.getElementById('userMenuBtn')?.addEventListener('click',e=>{e.stopPropagation();document.getElementById('userMenu').classList.toggle('hidden');});
+document.addEventListener('click',()=>document.getElementById('userMenu')?.classList.add('hidden'));
+document.getElementById('logoutBtn')?.addEventListener('click',()=>{['isLoggedIn','username','loginTime'].forEach(k=>localStorage.removeItem(k));location.href='login.html';});
+
+// ── Theme ──
+(function(){
+  const body=document.body,icon=document.getElementById('themeIcon');
+  if(localStorage.getItem('themeMode')==='dark')body.classList.add('dark-mode');
+  icon.className=body.classList.contains('dark-mode')?'fas fa-sun':'fas fa-moon';
+  document.getElementById('themeToggleBtn')?.addEventListener('click',()=>{body.classList.toggle('dark-mode');const d=body.classList.contains('dark-mode');localStorage.setItem('themeMode',d?'dark':'light');icon.className=d?'fas fa-sun':'fas fa-moon';});
+})();
+
+// ── Data ──
+const SK='clientsInventoryV1';
+const LEGACY=[
+  {id:1,client_name:'Tata Motors',company_name:'Tata Motors',phone:'8550937272',email:'SSG793525@tatamotors.com',address:'Chinchwad',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:2,client_name:'Shirodkar Preci Comp',company_name:'Shirodkar Preci Comp',phone:'8956311247',email:'adinath.sonawane@spcindia.com',address:'Chinchwad',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:3,client_name:'Ask Engineers',company_name:'Ask Engineers',phone:'9689999900',email:'ajay.hegade@askgroupindia.com',address:'Bhosari',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:4,client_name:'Efficient Precision & System Pvt.Ltd.',company_name:'Efficient Precision & System Pvt.Ltd.',phone:'9850899930',email:'epsplefficient@gmail.com',address:'Pune',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:5,client_name:'Calibit Systems Pvt. Ltd.',company_name:'Calibit Systems Pvt. Ltd.',phone:'9850959575',email:'neeraj.bannore@calibitsystems.com',address:'Pune',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:6,client_name:'Sei Numero Nirman Pvt.Ltd.',company_name:'Sei Numero Nirman Pvt.Ltd.',phone:'9850429000',email:'tcm@seinumero.net',address:'Shindewadi',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:7,client_name:'Valmet Technologies Pvt.Ltd.',company_name:'Valmet Technologies Pvt.Ltd.',phone:'9579921702',email:'dinesh.shirsat@valmet.com',address:'Fulgaon',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:8,client_name:'Prescient Technologies',company_name:'Prescient Technologies',phone:'8380017822',email:'vivekb@pre-scient.com',address:'Baner',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:9,client_name:'KBL',company_name:'KBL',phone:'9209061184',email:'nikhil.nirukhekar@kbl.co.in',address:'Kirloskar Wadi',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:10,client_name:'IcSoft',company_name:'IcSoft',phone:'9886000738',email:'narendran.g@icsoft.co.in',address:'Bengaluru',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:11,client_name:'ACTIn',company_name:'ACTIn',phone:'9552032900',email:'swapnil.waghmale@actin.co.in',address:'Pune',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:12,client_name:'Eagle Burgmann',company_name:'Eagle Burgmann',phone:'9766571150',email:'Apoorva.Dongaonkar@in.eagleburgmann.com',address:'Hadapsar',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:13,client_name:'Sansera Engineering Limited',company_name:'Sansera Engineering Limited',phone:'7387056042',email:'altaphusen_mujawar@sansera.in',address:'Pune',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:14,client_name:'Trimasys Control Solutions Pvt. Ltd.',company_name:'Trimasys Control Solutions Pvt. Ltd.',phone:'9028963547',email:'Ashish.Nilkhan@trimasyscontrol.com',address:'Bhosari',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:15,client_name:'Mahabal Metals',company_name:'Mahabal Metals',phone:'8087222185',email:'vinayak.lamdade@mahabal.in',address:'Sangli',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:16,client_name:'Arete Engineering Pvt Ltd',company_name:'Arete Engineering Pvt Ltd',phone:'9767101300',email:'areteengineering82@gmail.com',address:'Bhosari',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:17,client_name:'Autologic Industries',company_name:'Autologic Industries',phone:'9999985012',email:'info@autologicindustries.com',address:'Delhi',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:18,client_name:'Sany Heavy Vehicles',company_name:'Sany Heavy Vehicles',phone:'9011081130',email:'ajay.pawar@sanygroup.com',address:'Pune',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:19,client_name:'Klassic Wheels Ltd',company_name:'Klassic Wheels Ltd',phone:'9359195335',email:'r.choudaki@klassicwheels.com',address:'Ahmednagar',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'},
+  {id:20,client_name:'Kulkarni Engineers',company_name:'Kulkarni Engineers',phone:'9890663971',email:'kulkarni.engineers@gmail.com',address:'Kothrud',gst_no:'',status:'active',created_at:'2025-09-12T00:00:00.000Z'}
+];
+let allClients=JSON.parse(localStorage.getItem(SK)||'null')||LEGACY;
+let filteredClients=[...allClients];
+if(!localStorage.getItem(SK))localStorage.setItem(SK,JSON.stringify(allClients));
+function save(){localStorage.setItem(SK,JSON.stringify(allClients));}
+function nextId(){return allClients.length?Math.max(...allClients.map(c=>Number(c.id)||0))+1:1;}
+
+// ── Avatar initials ──
+function avatar(name=''){
+  const parts=(name||'?').split(' ').filter(Boolean);
+  const initials=parts.length>1?parts[0][0]+parts[parts.length-1][0]:parts[0]?parts[0][0]:'?';
+  const colors=['bg-blue-500','bg-emerald-500','bg-purple-500','bg-amber-500','bg-rose-500','bg-sky-500','bg-teal-500'];
+  const color=colors[name.charCodeAt(0)%colors.length];
+  return `<div class="w-10 h-10 rounded-full ${color} text-white flex items-center justify-center font-bold text-sm shrink-0">${initials.toUpperCase()}</div>`;
+}
+
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const st=document.getElementById('statusFilter').value;
+  filteredClients=allClients.filter(c=>{
+    const hay=`${c.client_name||''} ${c.company_name||''} ${c.phone||''} ${c.email||''} ${c.address||''} ${c.gst_no||''}`.toLowerCase();
+    return(!q||hay.includes(q))&&(!st||c.status===st);
+  });
+  const active=allClients.filter(c=>(c.status||'').toLowerCase()==='active').length;
+  document.getElementById('clientSummary').innerHTML=
+    `<strong>Summary:</strong> Total clients <strong>${allClients.length}</strong> &bull; Active <strong class="text-green-600">${active}</strong> &bull; Inactive <strong class="text-gray-500">${allClients.length-active}</strong> &bull; Showing <strong>${filteredClients.length}</strong>`;
+  renderCards();
+  renderTable();
+}
+
+function renderCards(){
+  document.getElementById('cardsGrid').innerHTML=filteredClients.map(c=>`
+    <article class="bg-white rounded-xl shadow hover:shadow-lg transition border border-gray-100 p-4 fade-in">
+      <div class="flex items-center gap-3 mb-3">
+        ${avatar(c.client_name||c.company_name||'?')}
+        <div class="min-w-0">
+          <h3 class="font-bold text-gray-800 truncate">${c.client_name||'—'}</h3>
+          <p class="text-xs text-gray-400 truncate">${c.company_name||'—'}</p>
+        </div>
+        <span class="ml-auto text-xs px-2 py-1 rounded-full shrink-0 ${c.status==='active'?'bg-green-100 text-green-700':'bg-gray-200 text-gray-500'}">${c.status}</span>
+      </div>
+      <div class="space-y-1.5 text-xs text-gray-500">
+        <div class="flex items-center gap-2"><i class="fas fa-phone text-blue-400 w-4"></i><a href="tel:${c.phone}" class="hover:text-blue-600">${c.phone||'—'}</a></div>
+        <div class="flex items-center gap-2"><i class="fas fa-envelope text-blue-400 w-4"></i><a href="mailto:${c.email}" class="hover:text-blue-600 truncate">${c.email||'—'}</a></div>
+        <div class="flex items-center gap-2"><i class="fas fa-location-dot text-blue-400 w-4"></i><span>${c.address||'—'}</span></div>
+        ${c.gst_no?`<div class="flex items-center gap-2"><i class="fas fa-receipt text-blue-400 w-4"></i><span>${c.gst_no}</span></div>`:''}
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button data-edit="${c.id}" class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><i class="fas fa-edit mr-1"></i>Edit</button>
+        <button data-delete="${c.id}" class="px-4 bg-red-50 text-red-500 py-2 rounded-lg text-sm hover:bg-red-100"><i class="fas fa-trash"></i></button>
+      </div>
+    </article>
+  `).join('');
+}
+
+function renderTable(){
+  document.getElementById('clientTableBody').innerHTML=filteredClients.map(c=>`
+    <tr class="border-t hover:bg-gray-50">
+      <td class="px-3 py-2 text-gray-400 text-xs">${c.id}</td>
+      <td class="px-3 py-2"><input data-id="${c.id}" data-field="client_name" value="${c.client_name||''}" class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 min-w-[120px]"></td>
+      <td class="px-3 py-2"><input data-id="${c.id}" data-field="company_name" value="${c.company_name||''}" class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 min-w-[140px]"></td>
+      <td class="px-3 py-2"><input data-id="${c.id}" data-field="phone" value="${c.phone||''}" class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 min-w-[100px]"></td>
+      <td class="px-3 py-2"><input data-id="${c.id}" data-field="email" value="${c.email||''}" class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 min-w-[160px]"></td>
+      <td class="px-3 py-2"><input data-id="${c.id}" data-field="address" value="${c.address||''}" class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 min-w-[100px]"></td>
+      <td class="px-3 py-2"><input data-id="${c.id}" data-field="gst_no" value="${c.gst_no||''}" class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 min-w-[100px]"></td>
+      <td class="px-3 py-2">
+        <select data-id="${c.id}" data-field="status" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+          <option value="active" ${c.status==='active'?'selected':''}>active</option>
+          <option value="inactive" ${c.status==='inactive'?'selected':''}>inactive</option>
+        </select>
+      </td>
+      <td class="px-3 py-2 text-xs text-gray-400 whitespace-nowrap">${new Date(c.created_at||Date.now()).toLocaleDateString('en-IN')}</td>
+      <td class="px-3 py-2">
+        <button data-delete="${c.id}" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded hover:bg-red-50"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── Modal ──
+function openModal(c=null){
+  document.getElementById('modalTitle').textContent=c?'Edit Client':'Add Client';
+  document.getElementById('clientId').value=c?.id||'';
+  document.getElementById('clientName').value=c?.client_name||'';
+  document.getElementById('companyName').value=c?.company_name||'';
+  document.getElementById('phone').value=c?.phone||'';
+  document.getElementById('email').value=c?.email||'';
+  document.getElementById('address').value=c?.address||'';
+  document.getElementById('gstNo').value=c?.gst_no||'';
+  document.getElementById('statusInput').value=c?.status||'active';
+  document.getElementById('clientModal').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('clientModal').classList.add('hidden');}
+
+document.getElementById('saveClientBtn').addEventListener('click',()=>{
+  const name=document.getElementById('clientName').value.trim();
+  if(!name){alert('Client name is required');return;}
+  const id=document.getElementById('clientId').value;
+  const payload={
+    client_name:name,company_name:document.getElementById('companyName').value.trim(),
+    phone:document.getElementById('phone').value.trim(),email:document.getElementById('email').value.trim(),
+    address:document.getElementById('address').value.trim(),gst_no:document.getElementById('gstNo').value.trim(),
+    status:document.getElementById('statusInput').value
+  };
+  if(id){allClients=allClients.map(c=>c.id===Number(id)?{...c,...payload}:c);}
+  else{allClients.unshift({id:nextId(),...payload,created_at:new Date().toISOString()});}
+  save();applyFilters();closeModal();
+});
+document.getElementById('closeModalBtn').addEventListener('click',closeModal);
+document.getElementById('cancelModalBtn').addEventListener('click',closeModal);
+document.getElementById('clientModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+// ── Cards events ──
+document.getElementById('cardsGrid').addEventListener('click',e=>{
+  const eb=e.target.closest('[data-edit]'),db=e.target.closest('[data-delete]');
+  if(eb)openModal(allClients.find(c=>c.id===Number(eb.dataset.edit)));
+  if(db&&confirm('Delete this client?')){allClients=allClients.filter(c=>c.id!==Number(db.dataset.delete));save();applyFilters();}
+});
+
+// ── Table inline edit ──
+document.getElementById('clientTableBody').addEventListener('change',e=>{
+  const t=e.target.closest('[data-id][data-field]');if(!t)return;
+  const id=Number(t.dataset.id),field=t.dataset.field;
+  allClients=allClients.map(c=>c.id===id?{...c,[field]:t.value}:c);save();applyFilters();
+});
+document.getElementById('clientTableBody').addEventListener('click',e=>{
+  const db=e.target.closest('[data-delete]');
+  if(db&&confirm('Delete?')){allClients=allClients.filter(c=>c.id!==Number(db.dataset.delete));save();applyFilters();}
+});
+
+// ── Controls ──
+document.getElementById('addClientBtn').addEventListener('click',()=>openModal());
+document.getElementById('searchInput').addEventListener('input',applyFilters);
+document.getElementById('statusFilter').addEventListener('change',applyFilters);
+
+// ── Exports ──
+document.getElementById('exportExcelBtn').addEventListener('click',()=>{
+  const ws=XLSX.utils.json_to_sheet(filteredClients);const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Clients');XLSX.writeFile(wb,'clients.xlsx');
+});
+document.getElementById('exportCsvBtn').addEventListener('click',()=>{
+  const csv=Papa.unparse(filteredClients);
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv'})),download:'clients.csv'});
+  a.click();
+});
+document.getElementById('exportPdfBtn').addEventListener('click',()=>{
+  const {jsPDF}=window.jspdf;const doc=new jsPDF('l','mm','a4');
+  doc.setFontSize(14);doc.text('S2R2 Technologies – Client Directory',14,15);
+  doc.autoTable({
+    startY:22,head:[['#','Client Name','Company','Phone','Email','Address','Status']],
+    body:filteredClients.map(c=>[c.id,c.client_name||'',c.company_name||'',c.phone||'',c.email||'',c.address||'',c.status||'']),
+    theme:'striped',headStyles:{fillColor:[0,91,234]},styles:{fontSize:8}
+  });
+  doc.save('clients.pdf');
+});
+document.getElementById('printBtn').addEventListener('click',()=>{
+  const rows=filteredClients.map((c,i)=>`<tr><td>${i+1}</td><td>${c.client_name||''}</td><td>${c.company_name||''}</td><td>${c.phone||''}</td><td>${c.email||''}</td><td>${c.address||''}</td><td>${c.status||''}</td></tr>`).join('');
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>Clients – S2R2</title><style>body{font-family:Arial,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#005bea;color:#fff}tr:nth-child(even){background:#f3f8ff}h2{color:#005bea}</style></head><body><h2>S2R2 Technologies – Client Directory</h2><table><thead><tr><th>#</th><th>Name</th><th>Company</th><th>Phone</th><th>Email</th><th>Address</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+  win.document.close();win.print();
+});
+
+// ── Import CSV ──
+document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importInput').click());
+document.getElementById('importInput').addEventListener('change',e=>{
+  const file=e.target.files[0];if(!file)return;
+  Papa.parse(file,{header:true,skipEmptyLines:true,complete:result=>{
+    const imported=result.data.map((row,i)=>({
+      id:nextId()+i,
+      client_name:row.client_name||row['Client Name']||row.name||'',
+      company_name:row.company_name||row['Company Name']||row.company||'',
+      phone:row.phone||row.Phone||row.mobile||'',
+      email:row.email||row.Email||'',
+      address:row.address||row.Address||row.area||'',
+      gst_no:row.gst_no||row.GST||row.gst||'',
+      status:row.status||'active',
+      created_at:new Date().toISOString()
+    })).filter(c=>c.client_name||c.company_name);
+    allClients=[...allClients,...imported];
+    save();applyFilters();
+    alert(`✅ Imported ${imported.length} clients successfully.`);
+    e.target.value='';
+  }});
+});
+
+applyFilters();
+</script>
+</body>
+</html>

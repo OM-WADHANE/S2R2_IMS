@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard – S2R2 Inventory Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ── Sidebar CSS ── */
+    .sidebar.app-sidebar { transition: left .3s ease, width .2s ease, min-width .2s ease, padding .2s ease; }
+    @media (max-width:767px) {
+      .sidebar.app-sidebar { position:fixed;z-index:50;left:-100%;top:0;width:16rem;max-width:85vw;min-height:100vh;padding-top:1rem; }
+      .sidebar.app-sidebar.active { left:0; }
+      body.sidebar-collapsed .sidebar.app-sidebar .nav-label,
+      body.sidebar-collapsed .sidebar.app-sidebar .sidebar-title { opacity:1;max-width:none; }
+      body.sidebar-collapsed .sidebar.app-sidebar .nav-link { justify-content:flex-start; }
+      body.sidebar-collapsed .sidebar.app-sidebar .nav-icon { margin-right:.75rem; }
+    }
+    @media (min-width:768px) {
+      .app-sidebar { width:16rem;min-width:16rem;flex-shrink:0;overflow:hidden; }
+      .nav-label { transition:opacity .15s ease,max-width .2s ease,margin .2s ease;max-width:12rem;overflow:hidden;white-space:nowrap; }
+      .sidebar-title { transition:opacity .15s ease,max-width .2s ease;max-width:12rem;overflow:hidden; }
+      body.sidebar-collapsed .app-sidebar { width:4.5rem;min-width:4.5rem;padding-left:.5rem;padding-right:.5rem; }
+      body.sidebar-collapsed .app-sidebar .sidebar-title { opacity:0;max-width:0;pointer-events:none; }
+      body.sidebar-collapsed .app-sidebar .nav-label { opacity:0;max-width:0;margin-left:0; }
+      body.sidebar-collapsed .app-sidebar .nav-link { justify-content:center; }
+      body.sidebar-collapsed .app-sidebar .nav-icon { margin-right:0!important; }
+      body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-expanded { display:none!important; }
+      body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-collapsed { display:inline-block!important; }
+      body:not(.sidebar-collapsed) #sidebarCollapse .sidebar-collapse-icon-collapsed { display:none!important; }
+    }
+    #sidebarCollapse .sidebar-collapse-icon-collapsed { display:none!important; }
+    /* ── Theme Toggle ── */
+    .theme-toggle-btn { display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:.5rem;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff; }
+    .theme-toggle-btn:hover { background:rgba(255,255,255,.24); }
+    /* ── Dark Mode ── */
+    body.dark-mode { background-color:#0b1220!important;color:#d1d5db; }
+    body.dark-mode .bg-white { background-color:#1f2937!important;color:#d1d5db!important; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-gray-100 { background-color:#111827!important;color:#d1d5db!important; }
+    body.dark-mode .text-gray-800, body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color:#d1d5db!important; }
+    body.dark-mode .border, body.dark-mode .border-t, body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 { border-color:#374151!important; }
+    body.dark-mode input, body.dark-mode select { background-color:#111827!important;color:#d1d5db!important; }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- ── Header ── -->
+<header class="bg-blue-600 text-white shadow-md sticky top-0 z-40">
+  <div class="flex items-center justify-between p-3 gap-3">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0">
+      <button id="menuToggle" type="button" class="md:hidden text-white p-2 rounded-lg hover:bg-white/10">
+        <i class="fas fa-bars text-xl"></i>
+      </button>
+      <button id="sidebarCollapse" type="button" class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-white/90 hover:bg-white/10 shrink-0">
+        <i class="fas fa-chevron-left text-sm sidebar-collapse-icon-expanded"></i>
+        <i class="fas fa-chevron-right text-sm sidebar-collapse-icon-collapsed"></i>
+      </button>
+      <img src="./s2r2-logo.jpg" alt="S2R2" class="h-8 md:h-10 rounded-lg bg-white object-contain p-0.5 shrink-0">
+    </div>
+    <h1 class="text-sm md:text-lg font-bold text-center flex-1 truncate">Inventory Management System | S2R2</h1>
+    <div class="flex items-center gap-2 shrink-0">
+      <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle theme"><i id="themeIcon" class="fas fa-moon"></i></button>
+      <div class="relative">
+        <button id="userMenuBtn" class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 rounded-lg px-2 py-1">
+          <i class="fas fa-user-circle text-xl"></i>
+          <span id="usernameDisplay" class="hidden md:inline text-sm font-medium">Admin</span>
+          <i class="fas fa-chevron-down text-xs"></i>
+        </button>
+        <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded-lg shadow-lg z-50">
+          <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-lg text-sm">
+            <i class="fas fa-sign-out-alt mr-2 text-red-500"></i>Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="flex flex-col md:flex-row min-h-screen">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar app-sidebar bg-white p-4 border-r shadow-sm">
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="sidebar-title text-lg font-semibold text-gray-700">Navigation</h2>
+        <button id="closeSidebar" class="md:hidden text-gray-500 p-1 rounded hover:bg-gray-100"><i class="fas fa-times"></i></button>
+      </div>
+      <nav>
+        <ul class="space-y-1">
+          <li><a href="index.html" class="nav-link flex items-center p-3 rounded-lg bg-blue-50 text-blue-600 font-medium">
+            <i class="fas fa-tachometer-alt nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Dashboard</span></a></li>
+          <li><a href="raw-materials.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+            <i class="fas fa-truck nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Raw Materials</span></a></li>
+          <li><a href="finished-products.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+            <i class="fas fa-cube nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Finished Products</span></a></li>
+          <li><a href="client-base.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+            <i class="fas fa-users nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Clients</span></a></li>
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="flex-1 p-4 md:p-6 space-y-6">
+    <div class="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+        <p class="text-gray-500 text-sm">Live stats synced with stored records</p>
+      </div>
+      <div class="w-full lg:w-80 relative">
+        <input id="globalSearch" class="w-full border rounded-xl pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white" placeholder="Search modules…">
+        <i class="fas fa-search absolute top-3 left-3 text-gray-400"></i>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <button data-href="raw-materials.html" class="stat-card bg-white text-left rounded-xl p-5 shadow hover:shadow-lg transition border border-gray-100">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="p-2 rounded-lg bg-amber-50"><i class="fas fa-truck text-amber-500"></i></span>
+          <p class="text-xs text-gray-500 font-medium">Raw Materials</p>
+        </div>
+        <p id="rawTotal" class="text-3xl font-extrabold text-gray-800">0</p>
+        <p class="text-xs text-amber-600 mt-1">Low Stock: <span id="rawLow" class="font-bold">0</span></p>
+      </button>
+      <button data-href="finished-products.html" class="stat-card bg-white text-left rounded-xl p-5 shadow hover:shadow-lg transition border border-gray-100">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="p-2 rounded-lg bg-emerald-50"><i class="fas fa-cube text-emerald-500"></i></span>
+          <p class="text-xs text-gray-500 font-medium">Finished Products</p>
+        </div>
+        <p id="finishedTotal" class="text-3xl font-extrabold text-gray-800">0</p>
+        <p class="text-xs text-emerald-600 mt-1">Active: <span id="finishedReady" class="font-bold">0</span></p>
+      </button>
+      <button data-href="client-base.html" class="stat-card bg-white text-left rounded-xl p-5 shadow hover:shadow-lg transition border border-gray-100">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="p-2 rounded-lg bg-sky-50"><i class="fas fa-users text-sky-500"></i></span>
+          <p class="text-xs text-gray-500 font-medium">Clients</p>
+        </div>
+        <p id="clientTotal" class="text-3xl font-extrabold text-gray-800">0</p>
+        <p class="text-xs text-sky-600 mt-1">Active: <span id="clientActive" class="font-bold">0</span></p>
+      </button>
+      <div class="bg-white text-left rounded-xl p-5 shadow border border-gray-100">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="p-2 rounded-lg bg-red-50"><i class="fas fa-bell text-red-500"></i></span>
+          <p class="text-xs text-gray-500 font-medium">Low Stock Alerts</p>
+        </div>
+        <p id="alertsCount" class="text-3xl font-extrabold text-red-600">0</p>
+        <p class="text-xs text-gray-400 mt-1">Requires attention</p>
+      </div>
+    </div>
+
+    <!-- Summary Bar -->
+    <div id="dashboardSummary" class="bg-white rounded-xl shadow p-4 text-sm text-gray-700 border border-gray-100"></div>
+
+    <!-- 3-col section -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+      <!-- Quick Actions + Stock Bars -->
+      <section class="bg-white rounded-xl shadow p-5 border border-gray-100">
+        <h3 class="font-semibold text-gray-700 mb-3">Quick Actions</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
+          <a href="raw-materials.html" class="px-3 py-2.5 rounded-lg bg-blue-50 text-blue-700 text-sm text-center font-medium hover:bg-blue-100 transition"><i class="fas fa-truck mr-1"></i> Raw Materials</a>
+          <a href="finished-products.html" class="px-3 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-sm text-center font-medium hover:bg-emerald-100 transition"><i class="fas fa-cube mr-1"></i> Finished</a>
+          <a href="client-base.html" class="px-3 py-2.5 rounded-lg bg-purple-50 text-purple-700 text-sm text-center font-medium hover:bg-purple-100 transition sm:col-span-2"><i class="fas fa-users mr-1"></i> Manage Clients</a>
+        </div>
+        <h4 class="text-sm font-semibold text-gray-700 mb-2">Stock Snapshot</h4>
+        <div id="stockBars" class="space-y-3"></div>
+      </section>
+
+      <!-- Low Stock Alerts -->
+      <section class="bg-white rounded-xl shadow p-5 border border-gray-100">
+        <h3 class="font-semibold text-gray-700 mb-3"><i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>Low Stock Alerts</h3>
+        <div id="lowStockList" class="space-y-2 text-sm"></div>
+      </section>
+
+      <!-- Recent Activity -->
+      <section class="bg-white rounded-xl shadow p-5 border border-gray-100">
+        <h3 class="font-semibold text-gray-700 mb-3"><i class="fas fa-clock text-blue-500 mr-2"></i>Recent Activity</h3>
+        <div id="recentActivityList" class="space-y-3 text-sm"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Auth Guard ──
+if (localStorage.getItem('isLoggedIn') !== 'true') location.href = 'login.html';
+document.getElementById('usernameDisplay').textContent =
+  (localStorage.getItem('username') || 'User').replace(/\b\w/g, c => c.toUpperCase());
+
+// ── Sidebar Nav ──
+(function(){
+  var KEY = 's2r2-sidebar-collapsed';
+  function applyCollapsed(c) {
+    document.body.classList.toggle('sidebar-collapsed', c);
+    var btn = document.getElementById('sidebarCollapse');
+    if (btn) { btn.setAttribute('aria-expanded', c ? 'false' : 'true'); }
+  }
+  function init() {
+    if (window.matchMedia('(min-width:768px)').matches)
+      applyCollapsed(localStorage.getItem(KEY) === '1');
+    document.getElementById('sidebarCollapse')?.addEventListener('click', function(){
+      var next = !document.body.classList.contains('sidebar-collapsed');
+      applyCollapsed(next); localStorage.setItem(KEY, next ? '1' : '0');
+    });
+    window.addEventListener('resize', function(){
+      if (!window.matchMedia('(min-width:768px)').matches)
+        document.body.classList.remove('sidebar-collapsed');
+      else applyCollapsed(localStorage.getItem(KEY) === '1');
+    });
+  }
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
+})();
+
+// ── Mobile Sidebar ──
+document.getElementById('menuToggle')?.addEventListener('click', () => document.querySelector('.sidebar').classList.toggle('active'));
+document.getElementById('closeSidebar')?.addEventListener('click', () => document.querySelector('.sidebar').classList.remove('active'));
+
+// ── User Menu ──
+document.getElementById('userMenuBtn')?.addEventListener('click', e => { e.stopPropagation(); document.getElementById('userMenu').classList.toggle('hidden'); });
+document.addEventListener('click', () => document.getElementById('userMenu')?.classList.add('hidden'));
+document.getElementById('logoutBtn')?.addEventListener('click', () => {
+  ['isLoggedIn','username','loginTime'].forEach(k => localStorage.removeItem(k));
+  location.href = 'login.html';
+});
+
+// ── Theme ──
+(function(){
+  const body = document.body;
+  const icon = document.getElementById('themeIcon');
+  if (localStorage.getItem('themeMode') === 'dark') body.classList.add('dark-mode');
+  icon.className = body.classList.contains('dark-mode') ? 'fas fa-sun' : 'fas fa-moon';
+  document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
+    body.classList.toggle('dark-mode');
+    const dark = body.classList.contains('dark-mode');
+    localStorage.setItem('themeMode', dark ? 'dark' : 'light');
+    icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+  });
+})();
+
+// ── Stat Cards ──
+document.querySelectorAll('.stat-card').forEach(card => {
+  card.addEventListener('click', () => { if (card.dataset.href) location.href = card.dataset.href; });
+});
+
+// ── Search ──
+document.getElementById('globalSearch').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.stat-card').forEach(card => {
+    card.style.opacity = !q || card.textContent.toLowerCase().includes(q) ? '1' : '0.4';
+  });
+});
+
+// ── Dashboard Stats ──
+function loadStats() {
+  const raw      = JSON.parse(localStorage.getItem('rawMaterialsInventoryV2') || '[]');
+  const finished = JSON.parse(localStorage.getItem('finishedProductsInventoryV2') || '[]');
+  const clients  = JSON.parse(localStorage.getItem('clientsInventoryV1') || '[]');
+
+  const rawLow  = raw.filter(i => Number(i.quantity||0) <= Number(i.min_stock||0) && Number(i.quantity||0) > 0);
+  const rawOut  = raw.filter(i => Number(i.quantity||0) === 0);
+  const finActive = finished.filter(i => (i.status||'').toLowerCase() === 'active').length;
+  const cliActive = clients.filter(i => (i.status||'').toLowerCase() === 'active').length;
+  const alerts  = [...rawLow, ...rawOut];
+
+  document.getElementById('rawTotal').textContent    = raw.length;
+  document.getElementById('rawLow').textContent      = rawLow.length + rawOut.length;
+  document.getElementById('finishedTotal').textContent = finished.length;
+  document.getElementById('finishedReady').textContent  = finActive;
+  document.getElementById('clientTotal').textContent  = clients.length;
+  document.getElementById('clientActive').textContent = cliActive;
+  document.getElementById('alertsCount').textContent  = alerts.length;
+
+  document.getElementById('dashboardSummary').innerHTML =
+    `<strong>Summary:</strong> Raw materials <strong>${raw.length}</strong> items (${rawLow.length} low, ${rawOut.length} out of stock) &bull; 
+     Finished products <strong>${finished.length}</strong> (${finActive} active) &bull; 
+     Clients <strong>${clients.length}</strong> (${cliActive} active)`;
+
+  // Low stock list
+  const lsl = document.getElementById('lowStockList');
+  lsl.innerHTML = alerts.length
+    ? alerts.map(i => `<div class="flex items-center justify-between border rounded-lg p-2 ${Number(i.quantity||0)===0?'border-red-200 bg-red-50':'border-amber-200 bg-amber-50'}">
+        <div><div class="font-medium text-gray-800">${i.name}</div>
+        <div class="text-xs text-gray-500">${i.supplier||''} | ${i.location||''}</div></div>
+        <div class="text-right"><div class="font-bold ${Number(i.quantity||0)===0?'text-red-600':'text-amber-600'}">${i.quantity} ${i.unit||''}</div>
+        <div class="text-xs text-gray-400">Min: ${i.min_stock||0}</div></div>
+      </div>`).join('')
+    : '<p class="text-gray-400 text-center py-4"><i class="fas fa-check-circle text-green-500 mr-1"></i>All stock levels OK</p>';
+
+  // Recent activity
+  const activity = [
+    ...raw.slice(-3).reverse().map(x => ({ type:'raw', label:x.name, time:x.last_updated||new Date().toISOString(), icon:'fa-truck', color:'blue' })),
+    ...finished.slice(-3).reverse().map(x => ({ type:'finished', label:x.name, time:new Date().toISOString(), icon:'fa-cube', color:'emerald' })),
+    ...clients.slice(-3).reverse().map(x => ({ type:'client', label:x.client_name||x.company_name||'Client', time:x.created_at||new Date().toISOString(), icon:'fa-user', color:'purple' }))
+  ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0,6);
+
+  const ral = document.getElementById('recentActivityList');
+  ral.innerHTML = activity.length
+    ? activity.map(a => `<div class="flex items-start gap-2">
+        <span class="mt-0.5 p-1.5 rounded-lg bg-${a.color}-50 text-${a.color}-600 text-xs"><i class="fas ${a.icon}"></i></span>
+        <div><div class="font-medium text-gray-800">${a.label}</div>
+        <div class="text-xs text-gray-400">${a.type.replace('_',' ')} &bull; ${new Date(a.time).toLocaleDateString()}</div></div>
+      </div>`).join('')
+    : '<p class="text-gray-400">No recent activity.</p>';
+
+  // Stock bars
+  const vals   = [raw.length, finished.length, clients.length];
+  const labels = ['Raw Materials','Finished Products','Clients'];
+  const colors = ['blue','emerald','purple'];
+  const maxVal = Math.max(...vals, 1);
+  document.getElementById('stockBars').innerHTML = labels.map((lbl,i) => {
+    const w = Math.max(6, (vals[i]/maxVal)*100).toFixed(1);
+    return `<div>
+      <div class="flex justify-between text-xs text-gray-600 mb-1"><span>${lbl}</span><span class="font-bold">${vals[i]}</span></div>
+      <div class="h-2 bg-gray-100 rounded-full"><div class="h-2 bg-${colors[i]}-500 rounded-full transition-all" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+loadStats();
+setInterval(loadStats, 15000);
+</script>
+</body>
+</html>

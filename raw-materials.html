@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raw Materials – S2R2 Inventory Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .sidebar.app-sidebar { transition:left .3s ease,width .2s ease,min-width .2s ease,padding .2s ease; }
+    @media (max-width:767px){
+      .sidebar.app-sidebar{position:fixed;z-index:50;left:-100%;top:0;width:16rem;max-width:85vw;min-height:100vh;padding-top:1rem;}
+      .sidebar.app-sidebar.active{left:0;}
+      body.sidebar-collapsed .sidebar.app-sidebar .nav-label,body.sidebar-collapsed .sidebar.app-sidebar .sidebar-title{opacity:1;max-width:none;}
+      body.sidebar-collapsed .sidebar.app-sidebar .nav-link{justify-content:flex-start;}
+      body.sidebar-collapsed .sidebar.app-sidebar .nav-icon{margin-right:.75rem;}
+    }
+    @media (min-width:768px){
+      .app-sidebar{width:16rem;min-width:16rem;flex-shrink:0;overflow:hidden;}
+      .nav-label{transition:opacity .15s ease,max-width .2s ease,margin .2s ease;max-width:12rem;overflow:hidden;white-space:nowrap;}
+      .sidebar-title{transition:opacity .15s ease,max-width .2s ease;max-width:12rem;overflow:hidden;}
+      body.sidebar-collapsed .app-sidebar{width:4.5rem;min-width:4.5rem;padding-left:.5rem;padding-right:.5rem;}
+      body.sidebar-collapsed .app-sidebar .sidebar-title{opacity:0;max-width:0;pointer-events:none;}
+      body.sidebar-collapsed .app-sidebar .nav-label{opacity:0;max-width:0;margin-left:0;}
+      body.sidebar-collapsed .app-sidebar .nav-link{justify-content:center;}
+      body.sidebar-collapsed .app-sidebar .nav-icon{margin-right:0!important;}
+      body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-expanded{display:none!important;}
+      body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-collapsed{display:inline-block!important;}
+      body:not(.sidebar-collapsed) #sidebarCollapse .sidebar-collapse-icon-collapsed{display:none!important;}
+    }
+    #sidebarCollapse .sidebar-collapse-icon-collapsed{display:none!important;}
+    .theme-toggle-btn{display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:.5rem;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;}
+    .theme-toggle-btn:hover{background:rgba(255,255,255,.24);}
+    body.dark-mode{background-color:#0b1220!important;color:#d1d5db;}
+    body.dark-mode .bg-white{background-color:#1f2937!important;color:#d1d5db!important;}
+    body.dark-mode .bg-gray-50,body.dark-mode .bg-gray-100{background-color:#111827!important;color:#d1d5db!important;}
+    body.dark-mode .text-gray-800,body.dark-mode .text-gray-700,body.dark-mode .text-gray-600,body.dark-mode .text-gray-500{color:#d1d5db!important;}
+    body.dark-mode .border,body.dark-mode .border-t,body.dark-mode .border-gray-100,body.dark-mode .border-gray-200{border-color:#374151!important;}
+    body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background-color:#111827!important;color:#d1d5db!important;}
+  </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- Header -->
+<header class="bg-blue-600 text-white shadow-md sticky top-0 z-40">
+  <div class="flex items-center justify-between p-3 gap-3">
+    <div class="flex items-center gap-2 md:gap-3 min-w-0">
+      <button id="menuToggle" type="button" class="md:hidden text-white p-2 rounded-lg hover:bg-white/10"><i class="fas fa-bars text-xl"></i></button>
+      <button id="sidebarCollapse" type="button" class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-white/90 hover:bg-white/10 shrink-0">
+        <i class="fas fa-chevron-left text-sm sidebar-collapse-icon-expanded"></i>
+        <i class="fas fa-chevron-right text-sm sidebar-collapse-icon-collapsed"></i>
+      </button>
+      <img src="./s2r2-logo.jpg" alt="S2R2" class="h-8 md:h-10 rounded-lg bg-white object-contain p-0.5 shrink-0">
+    </div>
+    <h1 class="text-sm md:text-lg font-bold text-center flex-1 truncate">Inventory Management System | S2R2</h1>
+    <div class="flex items-center gap-2 shrink-0">
+      <button id="themeToggleBtn" class="theme-toggle-btn"><i id="themeIcon" class="fas fa-moon"></i></button>
+      <div class="relative">
+        <button id="userMenuBtn" class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 rounded-lg px-2 py-1">
+          <i class="fas fa-user-circle text-xl"></i>
+          <span id="usernameDisplay" class="hidden md:inline text-sm font-medium">Admin</span>
+          <i class="fas fa-chevron-down text-xs"></i>
+        </button>
+        <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded-lg shadow-lg z-50">
+          <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-lg text-sm"><i class="fas fa-sign-out-alt mr-2 text-red-500"></i>Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="flex flex-col md:flex-row min-h-screen">
+  <!-- Sidebar -->
+  <aside class="sidebar app-sidebar bg-white p-4 border-r shadow-sm">
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="sidebar-title text-lg font-semibold text-gray-700">Navigation</h2>
+        <button id="closeSidebar" class="md:hidden text-gray-500 p-1 rounded hover:bg-gray-100"><i class="fas fa-times"></i></button>
+      </div>
+      <nav><ul class="space-y-1">
+        <li><a href="index.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700"><i class="fas fa-tachometer-alt nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Dashboard</span></a></li>
+        <li><a href="raw-materials.html" class="nav-link flex items-center p-3 rounded-lg bg-blue-50 text-blue-600 font-medium"><i class="fas fa-truck nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Raw Materials</span></a></li>
+        <li><a href="finished-products.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700"><i class="fas fa-cube nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Finished Products</span></a></li>
+        <li><a href="client-base.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100 text-gray-700"><i class="fas fa-users nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Clients</span></a></li>
+      </ul></nav>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-4 md:p-6">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Raw Materials</h2>
+        <p class="text-gray-500 text-sm">Manage and track all raw material inventory</p>
+      </div>
+      <button id="addMaterialBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+        <i class="fas fa-plus mr-1"></i> Add Material
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow p-4 mb-4 border border-gray-100">
+      <div class="flex flex-wrap gap-3 items-center">
+        <div class="flex-1 min-w-48 relative">
+          <input id="searchInput" type="text" placeholder="Search materials…"
+            class="w-full pl-9 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm">
+          <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+        </div>
+        <select id="categoryFilter" class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="">All Categories</option>
+          <option>Electronics</option><option>Sensors</option><option>Components</option><option>Mechanical</option><option>Other</option>
+        </select>
+        <select id="statusFilter" class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="">All Status</option><option value="in">In Stock</option><option value="low">Low Stock</option><option value="out">Out of Stock</option>
+        </select>
+        <button id="exportExcelBtn" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700"><i class="fas fa-file-excel mr-1"></i>Excel</button>
+        <button id="exportCsvBtn" class="px-3 py-2 bg-sky-600 text-white rounded-lg text-sm hover:bg-sky-700"><i class="fas fa-file-csv mr-1"></i>CSV</button>
+        <button id="resetBtn" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"><i class="fas fa-rotate-left mr-1"></i>Reset</button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div id="rawSummary" class="bg-white rounded-xl shadow p-3 mb-5 text-sm text-gray-600 border border-gray-100"></div>
+
+    <!-- Grid -->
+    <div id="materialsGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    <div id="emptyState" class="hidden text-center py-16">
+      <i class="fas fa-box-open text-5xl text-gray-300 mb-3"></i>
+      <p class="text-gray-400 text-lg">No materials found</p>
+      <button id="emptyAddBtn" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Add First Material</button>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Modal -->
+<div id="materialModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h4 id="modalTitle" class="text-lg font-bold text-gray-800">Add Raw Material</h4>
+      <button id="closeModalBtn" class="text-gray-400 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <input type="hidden" id="editId">
+      <div class="col-span-2"><label class="text-xs text-gray-500 mb-1 block">Material Name *</label>
+        <input id="editName" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required placeholder="e.g. PLC Controller"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Category</label>
+        <select id="editCategory" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option>Electronics</option><option>Sensors</option><option>Components</option><option>Mechanical</option><option>Other</option>
+        </select></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Unit</label>
+        <input id="editUnit" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="pcs / kg / m"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Quantity *</label>
+        <input id="editQty" type="number" min="0" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Min Stock Level</label>
+        <input id="editMinStock" type="number" min="0" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Supplier</label>
+        <input id="editSupplier" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Location</label>
+        <input id="editLocation" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></div>
+      <div><label class="text-xs text-gray-500 mb-1 block">Unit Price (₹)</label>
+        <input id="editPrice" type="number" min="0" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></div>
+      <div class="col-span-2"><label class="text-xs text-gray-500 mb-1 block">Description</label>
+        <textarea id="editDesc" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Brief description…"></textarea></div>
+    </div>
+    <div class="flex justify-end gap-2 mt-4">
+      <button id="cancelModalBtn" type="button" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm">Cancel</button>
+      <button id="saveModalBtn" type="button" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium">Save Material</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Auth ──
+if (localStorage.getItem('isLoggedIn') !== 'true') location.href = 'login.html';
+document.getElementById('usernameDisplay').textContent = (localStorage.getItem('username')||'User').replace(/\b\w/g,c=>c.toUpperCase());
+
+// ── Sidebar Nav ──
+(function(){
+  var KEY='s2r2-sidebar-collapsed';
+  function applyCollapsed(c){document.body.classList.toggle('sidebar-collapsed',c);}
+  function init(){
+    if(window.matchMedia('(min-width:768px)').matches)applyCollapsed(localStorage.getItem(KEY)==='1');
+    document.getElementById('sidebarCollapse')?.addEventListener('click',function(){
+      var next=!document.body.classList.contains('sidebar-collapsed');applyCollapsed(next);localStorage.setItem(KEY,next?'1':'0');
+    });
+    window.addEventListener('resize',function(){
+      if(!window.matchMedia('(min-width:768px)').matches)document.body.classList.remove('sidebar-collapsed');
+      else applyCollapsed(localStorage.getItem(KEY)==='1');
+    });
+  }
+  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+})();
+document.getElementById('menuToggle')?.addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('active'));
+document.getElementById('closeSidebar')?.addEventListener('click',()=>document.querySelector('.sidebar').classList.remove('active'));
+document.getElementById('userMenuBtn')?.addEventListener('click',e=>{e.stopPropagation();document.getElementById('userMenu').classList.toggle('hidden');});
+document.addEventListener('click',()=>document.getElementById('userMenu')?.classList.add('hidden'));
+document.getElementById('logoutBtn')?.addEventListener('click',()=>{['isLoggedIn','username','loginTime'].forEach(k=>localStorage.removeItem(k));location.href='login.html';});
+
+// ── Theme ──
+(function(){
+  const body=document.body,icon=document.getElementById('themeIcon');
+  if(localStorage.getItem('themeMode')==='dark')body.classList.add('dark-mode');
+  icon.className=body.classList.contains('dark-mode')?'fas fa-sun':'fas fa-moon';
+  document.getElementById('themeToggleBtn')?.addEventListener('click',()=>{
+    body.classList.toggle('dark-mode');const dark=body.classList.contains('dark-mode');
+    localStorage.setItem('themeMode',dark?'dark':'light');icon.className=dark?'fas fa-sun':'fas fa-moon';
+  });
+})();
+
+// ── Data ──
+const STORAGE_KEY = 'rawMaterialsInventoryV2';
+const SEED = [
+  {id:1,name:'PLC Controller',category:'Electronics',description:'Programmable Logic Controller for automation systems',quantity:48,unit:'pcs',supplier:'Siemens',location:'Warehouse A',min_stock:10,price:15000,last_updated:'2025-03-01'},
+  {id:2,name:'RFID Antenna',category:'Sensors',description:'Radio Frequency Identification antenna for tracking',quantity:12,unit:'pcs',supplier:'Honeywell',location:'Warehouse A',min_stock:15,price:2500,last_updated:'2025-03-02'},
+  {id:3,name:'ESP32 Module',category:'Electronics',description:'WiFi and Bluetooth enabled microcontroller module',quantity:87,unit:'pcs',supplier:'Espressif',location:'Warehouse B',min_stock:20,price:450,last_updated:'2025-02-28'},
+  {id:4,name:'Power Supply 24V',category:'Electronics',description:'24V DC power supply unit with regulation',quantity:5,unit:'pcs',supplier:'Mean Well',location:'Production Floor',min_stock:8,price:3200,last_updated:'2025-03-03'},
+  {id:5,name:'Temperature Sensor',category:'Sensors',description:'Digital temperature sensor with I2C interface',quantity:156,unit:'pcs',supplier:'Adafruit',location:'Warehouse A',min_stock:30,price:180,last_updated:'2025-03-01'},
+  {id:6,name:'LED Strip RGB',category:'Electronics',description:'RGB LED strip for lighting applications',quantity:34,unit:'m',supplier:'Philips',location:'Warehouse B',min_stock:20,price:850,last_updated:'2025-02-27'},
+  {id:7,name:'Relay Module',category:'Components',description:'5V single channel relay module',quantity:0,unit:'pcs',supplier:'Generic',location:'Warehouse A',min_stock:20,price:120,last_updated:'2025-02-25'},
+  {id:8,name:'Ethernet Switch',category:'Electronics',description:'8-port managed Ethernet switch',quantity:15,unit:'pcs',supplier:'Cisco',location:'Server Room',min_stock:3,price:8500,last_updated:'2025-03-01'}
+];
+
+let materials = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') || SEED;
+let filtered  = [...materials];
+if (!localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, JSON.stringify(materials));
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(materials)); }
+function nextId() { return materials.length ? Math.max(...materials.map(m=>m.id||0))+1 : 1; }
+
+function stockStatus(m) {
+  const q=Number(m.quantity||0), min=Number(m.min_stock||0);
+  if(q===0) return {label:'Out of Stock',cls:'bg-red-100 text-red-700',dot:'bg-red-500'};
+  if(q<=min) return {label:'Low Stock',cls:'bg-amber-100 text-amber-700',dot:'bg-amber-500'};
+  return {label:'In Stock',cls:'bg-green-100 text-green-700',dot:'bg-green-500'};
+}
+
+function renderGrid() {
+  const grid=document.getElementById('materialsGrid');
+  const empty=document.getElementById('emptyState');
+  const totalQty=materials.reduce((s,i)=>s+Number(i.quantity||0),0);
+  const lowCount=materials.filter(i=>Number(i.quantity||0)<=Number(i.min_stock||0)&&Number(i.quantity||0)>0).length;
+  const outCount=materials.filter(i=>Number(i.quantity||0)===0).length;
+  const totalVal=materials.reduce((s,i)=>s+(Number(i.quantity||0)*Number(i.price||0)),0);
+  document.getElementById('rawSummary').innerHTML=
+    `<strong>Summary:</strong> ${materials.length} materials &bull; Total qty <strong>${totalQty}</strong> &bull; Low stock <strong class="text-amber-600">${lowCount}</strong> &bull; Out of stock <strong class="text-red-600">${outCount}</strong> &bull; Inventory value <strong class="text-blue-600">₹${totalVal.toLocaleString()}</strong> &bull; Showing <strong>${filtered.length}</strong>`;
+  if(!filtered.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  grid.innerHTML=filtered.map(m=>{
+    const s=stockStatus(m);
+    const q=Number(m.quantity||0),min=Number(m.min_stock||0);
+    const pct=min>0?Math.min(100,Math.round((q/Math.max(q,min,1))*100)):100;
+    const barColor=q===0?'bg-red-400':q<=min?'bg-amber-400':'bg-green-400';
+    return `<div class="bg-white rounded-xl shadow hover:shadow-lg transition border border-gray-100 p-5">
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <h3 class="font-bold text-gray-800">${m.name}</h3>
+          <p class="text-xs text-gray-400 mt-0.5"><i class="fas fa-tag mr-1"></i>${m.category}</p>
+        </div>
+        <span class="px-2 py-1 text-xs font-semibold rounded-full ${s.cls}">${s.label}</span>
+      </div>
+      <p class="text-gray-500 text-sm mb-4 line-clamp-2">${m.description||''}</p>
+      <div class="mb-3">
+        <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Stock Level</span><span>${q}/${Math.max(q,min)} ${m.unit||''}</span></div>
+        <div class="h-1.5 bg-gray-100 rounded-full"><div class="${barColor} h-1.5 rounded-full" style="width:${pct}%"></div></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-sm mb-4">
+        <div class="bg-gray-50 rounded-lg p-2"><p class="text-xs text-gray-400">Supplier</p><p class="font-medium text-gray-700 truncate">${m.supplier||'—'}</p></div>
+        <div class="bg-gray-50 rounded-lg p-2"><p class="text-xs text-gray-400">Location</p><p class="font-medium text-gray-700 truncate">${m.location||'—'}</p></div>
+        <div class="bg-gray-50 rounded-lg p-2"><p class="text-xs text-gray-400">Unit Price</p><p class="font-bold text-blue-600">₹${Number(m.price||0).toLocaleString()}</p></div>
+        <div class="bg-gray-50 rounded-lg p-2"><p class="text-xs text-gray-400">Total Value</p><p class="font-bold text-emerald-600">₹${(q*Number(m.price||0)).toLocaleString()}</p></div>
+      </div>
+      <p class="text-xs text-gray-400 mb-3"><i class="fas fa-calendar mr-1"></i>Updated: ${m.last_updated||'N/A'}</p>
+      <div class="flex gap-2">
+        <button data-edit="${m.id}" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700"><i class="fas fa-edit mr-1"></i>Edit</button>
+        <button data-delete="${m.id}" class="px-4 bg-red-50 text-red-500 py-2 rounded-lg text-sm hover:bg-red-100"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyFilters() {
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const cat=document.getElementById('categoryFilter').value;
+  const st=document.getElementById('statusFilter').value;
+  filtered=materials.filter(m=>{
+    const matchQ=!q||[m.name,m.description,m.supplier,m.category].join(' ').toLowerCase().includes(q);
+    const matchC=!cat||m.category===cat;
+    const qty=Number(m.quantity||0),min=Number(m.min_stock||0);
+    const matchS=!st||(st==='out'&&qty===0)||(st==='low'&&qty>0&&qty<=min)||(st==='in'&&qty>min);
+    return matchQ&&matchC&&matchS;
+  });
+  renderGrid();
+}
+
+// ── Modal ──
+function openModal(m=null) {
+  document.getElementById('modalTitle').textContent=m?'Edit Raw Material':'Add Raw Material';
+  document.getElementById('editId').value=m?.id||'';
+  document.getElementById('editName').value=m?.name||'';
+  document.getElementById('editCategory').value=m?.category||'Electronics';
+  document.getElementById('editUnit').value=m?.unit||'pcs';
+  document.getElementById('editQty').value=m?.quantity||0;
+  document.getElementById('editMinStock').value=m?.min_stock||0;
+  document.getElementById('editSupplier').value=m?.supplier||'';
+  document.getElementById('editLocation').value=m?.location||'';
+  document.getElementById('editPrice').value=m?.price||0;
+  document.getElementById('editDesc').value=m?.description||'';
+  document.getElementById('materialModal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('materialModal').classList.add('hidden'); }
+
+document.getElementById('saveModalBtn').addEventListener('click',()=>{
+  const name=document.getElementById('editName').value.trim();
+  if(!name){alert('Material name is required');return;}
+  const id=document.getElementById('editId').value;
+  const payload={
+    name,category:document.getElementById('editCategory').value,unit:document.getElementById('editUnit').value,
+    quantity:Number(document.getElementById('editQty').value),min_stock:Number(document.getElementById('editMinStock').value),
+    supplier:document.getElementById('editSupplier').value,location:document.getElementById('editLocation').value,
+    price:Number(document.getElementById('editPrice').value),description:document.getElementById('editDesc').value,
+    last_updated:new Date().toISOString().slice(0,10)
+  };
+  if(id){ materials=materials.map(m=>m.id===Number(id)?{...m,...payload}:m); }
+  else { materials.unshift({id:nextId(),...payload}); }
+  save(); applyFilters(); closeModal();
+});
+
+document.getElementById('closeModalBtn').addEventListener('click',closeModal);
+document.getElementById('cancelModalBtn').addEventListener('click',closeModal);
+document.getElementById('materialModal').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeModal(); });
+
+// ── Grid Events ──
+document.getElementById('materialsGrid').addEventListener('click',e=>{
+  const editBtn=e.target.closest('[data-edit]');
+  const delBtn=e.target.closest('[data-delete]');
+  if(editBtn){const m=materials.find(x=>x.id===Number(editBtn.dataset.edit));if(m)openModal(m);}
+  if(delBtn){if(confirm('Delete this material?')){materials=materials.filter(x=>x.id!==Number(delBtn.dataset.delete));save();applyFilters();}}
+});
+document.getElementById('emptyAddBtn')?.addEventListener('click',()=>openModal());
+
+// ── Buttons ──
+document.getElementById('addMaterialBtn').addEventListener('click',()=>openModal());
+document.getElementById('searchInput').addEventListener('input',applyFilters);
+document.getElementById('categoryFilter').addEventListener('change',applyFilters);
+document.getElementById('statusFilter').addEventListener('change',applyFilters);
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  ['searchInput','categoryFilter','statusFilter'].forEach(id=>document.getElementById(id).value='');applyFilters();
+});
+
+document.getElementById('exportExcelBtn').addEventListener('click',()=>{
+  const ws=XLSX.utils.json_to_sheet(filtered);const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Raw Materials');XLSX.writeFile(wb,'raw-materials.xlsx');
+});
+document.getElementById('exportCsvBtn').addEventListener('click',()=>{
+  const csv=Papa.unparse(filtered);const blob=new Blob([csv],{type:'text/csv'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'raw-materials.csv'});
+  a.click();URL.revokeObjectURL(a.href);
+});
+
+renderGrid();
+</script>
+</body>
+</html>
