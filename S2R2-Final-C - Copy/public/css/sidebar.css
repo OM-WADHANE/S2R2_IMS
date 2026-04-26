@@ -1,0 +1,174 @@
+/* Mobile: slide-in drawer (full labels) */
+.sidebar.app-sidebar {
+    transition: left 0.3s ease, width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
+}
+
+@media (max-width: 767px) {
+    .sidebar.app-sidebar {
+        position: fixed;
+        z-index: 50;
+        left: -100%;
+        top: 0;
+        width: 16rem;
+        max-width: 85vw;
+        min-height: 100vh;
+        padding-top: 1rem;
+    }
+
+    .sidebar.app-sidebar.active {
+        left: 0;
+    }
+
+    /* Drawer always shows labels */
+    body.sidebar-collapsed .sidebar.app-sidebar .nav-label,
+    body.sidebar-collapsed .sidebar.app-sidebar .sidebar-title {
+        opacity: 1;
+        max-width: none;
+    }
+
+    body.sidebar-collapsed .sidebar.app-sidebar .nav-link {
+        justify-content: flex-start;
+    }
+
+    body.sidebar-collapsed .sidebar.app-sidebar .nav-icon {
+        margin-right: 0.75rem;
+    }
+}
+
+/* Desktop: Gmail-style expand / icon rail */
+@media (min-width: 768px) {
+    .app-sidebar {
+        width: 16rem;
+        min-width: 16rem;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .nav-label {
+        transition: opacity 0.15s ease, max-width 0.2s ease, margin 0.2s ease;
+        max-width: 12rem;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .sidebar-title {
+        transition: opacity 0.15s ease, max-width 0.2s ease;
+        max-width: 12rem;
+        overflow: hidden;
+    }
+
+    body.sidebar-collapsed .app-sidebar {
+        width: 4.5rem;
+        min-width: 4.5rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    body.sidebar-collapsed .app-sidebar .sidebar-title {
+        opacity: 0;
+        max-width: 0;
+        pointer-events: none;
+    }
+
+    body.sidebar-collapsed .app-sidebar .nav-label {
+        opacity: 0;
+        max-width: 0;
+        margin-left: 0;
+    }
+
+    body.sidebar-collapsed .app-sidebar .nav-link {
+        justify-content: center;
+    }
+
+    body.sidebar-collapsed .app-sidebar .nav-icon {
+        margin-right: 0 !important;
+    }
+
+    body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-expanded {
+        display: none !important;
+    }
+
+    body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-collapsed {
+        display: inline-block !important;
+    }
+
+    body:not(.sidebar-collapsed) #sidebarCollapse .sidebar-collapse-icon-collapsed {
+        display: none !important;
+    }
+}
+
+#sidebarCollapse .sidebar-collapse-icon-collapsed {
+    display: none !important;
+}
+
+.brand-logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.95) url('/images/s2r2-logo.jpg') center/contain no-repeat;
+    flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+    .brand-logo {
+        width: 3rem;
+        height: 3rem;
+    }
+}
+
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+body.dark-mode {
+    background-color: #0b1220 !important;
+    color: #d1d5db;
+}
+
+body.dark-mode .bg-white {
+    background-color: #1f2937 !important;
+    color: #d1d5db !important;
+}
+
+body.dark-mode .bg-gray-50,
+body.dark-mode .bg-gray-100 {
+    background-color: #111827 !important;
+    color: #d1d5db !important;
+}
+
+body.dark-mode .text-gray-800,
+body.dark-mode .text-gray-700,
+body.dark-mode .text-gray-600,
+body.dark-mode .text-gray-500 {
+    color: #d1d5db !important;
+}
+
+body.dark-mode .border,
+body.dark-mode .border-t,
+body.dark-mode .border-r,
+body.dark-mode .border-b,
+body.dark-mode .border-gray-100,
+body.dark-mode .border-gray-200,
+body.dark-mode .border-gray-300 {
+    border-color: #374151 !important;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea,
+body.dark-mode table {
+    background-color: #111827 !important;
+    color: #d1d5db !important;
+}

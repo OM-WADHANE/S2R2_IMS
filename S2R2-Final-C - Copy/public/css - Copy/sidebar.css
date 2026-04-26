@@ -1,0 +1,102 @@
+/* Mobile: slide-in drawer (full labels) */
+.sidebar.app-sidebar {
+    transition: left 0.3s ease, width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
+}
+
+@media (max-width: 767px) {
+    .sidebar.app-sidebar {
+        position: fixed;
+        z-index: 50;
+        left: -100%;
+        top: 0;
+        width: 16rem;
+        max-width: 85vw;
+        min-height: 100vh;
+        padding-top: 1rem;
+    }
+
+    .sidebar.app-sidebar.active {
+        left: 0;
+    }
+
+    /* Drawer always shows labels */
+    body.sidebar-collapsed .sidebar.app-sidebar .nav-label,
+    body.sidebar-collapsed .sidebar.app-sidebar .sidebar-title {
+        opacity: 1;
+        max-width: none;
+    }
+
+    body.sidebar-collapsed .sidebar.app-sidebar .nav-link {
+        justify-content: flex-start;
+    }
+
+    body.sidebar-collapsed .sidebar.app-sidebar .nav-icon {
+        margin-right: 0.75rem;
+    }
+}
+
+/* Desktop: Gmail-style expand / icon rail */
+@media (min-width: 768px) {
+    .app-sidebar {
+        width: 16rem;
+        min-width: 16rem;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .nav-label {
+        transition: opacity 0.15s ease, max-width 0.2s ease, margin 0.2s ease;
+        max-width: 12rem;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .sidebar-title {
+        transition: opacity 0.15s ease, max-width 0.2s ease;
+        max-width: 12rem;
+        overflow: hidden;
+    }
+
+    body.sidebar-collapsed .app-sidebar {
+        width: 4.5rem;
+        min-width: 4.5rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    body.sidebar-collapsed .app-sidebar .sidebar-title {
+        opacity: 0;
+        max-width: 0;
+        pointer-events: none;
+    }
+
+    body.sidebar-collapsed .app-sidebar .nav-label {
+        opacity: 0;
+        max-width: 0;
+        margin-left: 0;
+    }
+
+    body.sidebar-collapsed .app-sidebar .nav-link {
+        justify-content: center;
+    }
+
+    body.sidebar-collapsed .app-sidebar .nav-icon {
+        margin-right: 0 !important;
+    }
+
+    body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-expanded {
+        display: none !important;
+    }
+
+    body.sidebar-collapsed #sidebarCollapse .sidebar-collapse-icon-collapsed {
+        display: inline-block !important;
+    }
+
+    body:not(.sidebar-collapsed) #sidebarCollapse .sidebar-collapse-icon-collapsed {
+        display: none !important;
+    }
+}
+
+#sidebarCollapse .sidebar-collapse-icon-collapsed {
+    display: none !important;
+}

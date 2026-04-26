@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clients - Inventory Management System | S2R2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body class="bg-gray-50">
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="flex items-center justify-between p-4 gap-3">
+            <div class="flex items-center gap-2 md:gap-4 min-w-0">
+                <button id="menuToggle" type="button" class="md:hidden text-white p-2 rounded-lg hover:bg-white/10"><i class="fas fa-bars text-xl"></i></button>
+                <button type="button" id="sidebarCollapse" class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-white/90 hover:bg-white/10 transition shrink-0">
+                    <i class="fas fa-chevron-left text-sm sidebar-collapse-icon-expanded"></i><i class="fas fa-chevron-right text-sm sidebar-collapse-icon-collapsed hidden"></i>
+                </button>
+                <div class="brand-logo" aria-label="S2R2 Logo" role="img"></div>
+            </div>
+            <h1 class="text-sm md:text-xl font-bold text-center flex-1">Inventory Management System | S2R2</h1>
+            <div class="flex items-center gap-2">
+                <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle theme" aria-label="Toggle theme">
+                    <i id="themeToggleIcon" class="fas fa-moon"></i>
+                </button>
+                <div class="relative">
+                    <button id="userMenuButton" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-lg px-2 py-1">
+                    <i class="fas fa-user-circle text-xl"></i>
+                    <span id="username" class="hidden md:inline text-sm font-medium">Admin</span>
+                    <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded-lg shadow-lg z-50">
+                        <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-lg text-sm">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-col md:flex-row">
+        <aside class="sidebar app-sidebar bg-white min-h-screen p-4 border-r shadow-sm">
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="sidebar-title text-lg font-semibold">Navigation</h2>
+                    <button type="button" id="closeSidebar" class="md:hidden text-gray-500 p-1 rounded hover:bg-gray-100"><i class="fas fa-times"></i></button>
+                </div>
+                <nav>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100"><i class="fas fa-tachometer-alt nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Dashboard</span></a></li>
+                        <li><a href="raw-materials.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100"><i class="fas fa-truck nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Raw Materials</span></a></li>
+                        <li><a href="finished-products.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100"><i class="fas fa-cube nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Finished Products</span></a></li>
+                        <li><a href="client-base.html" class="nav-link flex items-center p-3 rounded-lg bg-blue-50 text-blue-600"><i class="fas fa-users nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Clients</span></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-6 space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Clients Module</h2>
+                <p class="text-gray-600">Cards + editable table with full export toolset</p>
+            </div>
+
+            <section class="bg-white rounded-xl shadow p-4">
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-2">
+                    <div class="xl:col-span-3"><input id="searchInput" class="w-full border rounded-lg px-3 py-2" placeholder="Search clients"></div>
+                    <div class="xl:col-span-2">
+                        <select id="statusFilter" class="w-full border rounded-lg px-3 py-2">
+                            <option value="">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="xl:col-span-7 flex flex-wrap gap-2">
+                        <button id="addClientBtn" class="px-3 py-2 rounded bg-blue-600 text-white text-sm">Add Client</button>
+                        <button id="exportExcelBtn" class="px-3 py-2 rounded bg-emerald-600 text-white text-sm">Export Excel</button>
+                        <button id="importClientsBtn" class="px-3 py-2 rounded bg-sky-600 text-white text-sm">Import Clients</button>
+                        <input id="importClientsInput" type="file" accept=".csv,.xlsx,.xls" class="hidden">
+                        <button id="exportAllPdfBtn" class="px-3 py-2 rounded bg-red-600 text-white text-sm">Export All PDF</button>
+                        <button id="printBtn" class="px-3 py-2 rounded bg-gray-700 text-white text-sm">Printable Sheet</button>
+                    </div>
+                </div>
+            </section>
+            <section id="clientSummary" class="bg-white rounded-xl shadow p-4 text-sm text-gray-700"></section>
+
+            <section>
+                <div id="cardsGrid" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </section>
+
+            <section class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="px-4 py-3 border-b bg-gray-50 font-semibold">Editable Table</div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="text-left px-3 py-2">ID</th><th class="text-left px-3 py-2">Client Name</th><th class="text-left px-3 py-2">Company</th><th class="text-left px-3 py-2">Phone</th><th class="text-left px-3 py-2">Email</th><th class="text-left px-3 py-2">Address</th><th class="text-left px-3 py-2">GST</th><th class="text-left px-3 py-2">Status</th><th class="text-left px-3 py-2">Created</th><th class="text-left px-3 py-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="clientModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-xl w-full max-w-2xl p-5">
+            <div class="flex justify-between items-center mb-4"><h3 class="font-semibold text-lg">Client Form</h3><button id="closeModalBtn"><i class="fas fa-times"></i></button></div>
+            <form id="clientForm" class="grid md:grid-cols-2 gap-3">
+                <input type="hidden" id="clientId">
+                <input id="clientName" class="border rounded-lg px-3 py-2" placeholder="Client Name" required>
+                <input id="companyName" class="border rounded-lg px-3 py-2" placeholder="Company Name">
+                <input id="phone" class="border rounded-lg px-3 py-2" placeholder="Phone">
+                <input id="email" class="border rounded-lg px-3 py-2" placeholder="Email">
+                <input id="address" class="border rounded-lg px-3 py-2 md:col-span-2" placeholder="Address">
+                <input id="gstNo" class="border rounded-lg px-3 py-2" placeholder="GST No">
+                <select id="status" class="border rounded-lg px-3 py-2"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+                <div class="md:col-span-2 flex justify-end gap-2 pt-2">
+                    <button type="button" id="cancelBtn" class="px-4 py-2 rounded bg-gray-100">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/sidebar-nav.js"></script>
+    <script>
+        const CLIENT_STORAGE_KEY = 'clientsInventoryV1';
+        const LEGACY_CLIENTS = [
+            { id: 1, client_name: 'Tata Motors', company_name: 'Tata Motors', phone: '8550937272', email: 'SSG793525@tatamotors.com', address: 'Chinchwad', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 2, client_name: 'Shirodkar Preci Comp', company_name: 'Shirodkar Preci Comp', phone: '8956311247', email: 'adinath.sonawane@spcindia.com', address: 'Chinchwad', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 3, client_name: 'Ask Engineers', company_name: 'Ask Engineers', phone: '9689999900', email: 'ajay.hegade@askgroupindia.com', address: 'Bhosari', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 4, client_name: 'Efficient Precision & System Pvt.Ltd.', company_name: 'Efficient Precision & System Pvt.Ltd.', phone: '9850899930', email: 'epsplefficient@gmail.com', address: 'Pune', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 5, client_name: 'Calibit Systems Pvt. Ltd.', company_name: 'Calibit Systems Pvt. Ltd.', phone: '9850959575', email: 'neeraj.bannore@calibitsystems.com', address: 'Pune', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 6, client_name: 'Sei Numero Nirman Pvt.Ltd.', company_name: 'Sei Numero Nirman Pvt.Ltd.', phone: '9850429000', email: 'tcm@seinumero.net', address: 'Shindewadi', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 7, client_name: 'Valmet Technologies Pvt.Ltd.', company_name: 'Valmet Technologies Pvt.Ltd.', phone: '9579921702', email: 'dinesh.shirsat@valmet.com', address: 'Fulgaon', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 8, client_name: 'Prescient Technologies', company_name: 'Prescient Technologies', phone: '8380017822', email: 'vivekb@pre-scient.com', address: 'Baner', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 9, client_name: 'KBL', company_name: 'KBL', phone: '9209061184', email: 'nikhil.nirukhekar@kbl.co.in', address: 'Kirloskar Wadi', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 10, client_name: 'IcSoft', company_name: 'IcSoft', phone: '9886000738', email: 'narendran.g@icsoft.co.in', address: 'Bengaluru', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 11, client_name: 'ACTIn', company_name: 'ACTIn', phone: '9552032900', email: 'swapnil.waghmale@actin.co.in', address: 'Pune', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 12, client_name: 'Eagle Burgmann', company_name: 'Eagle Burgmann', phone: '9766571150', email: 'Apoorva.Dongaonkar@in.eagleburgmann.com', address: 'Hadapsar', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 13, client_name: 'Sansera Engineering Limited', company_name: 'Sansera Engineering Limited', phone: '7387056042', email: 'altaphusen_mujawar@sansera.in', address: 'Pune', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 14, client_name: 'Trimasys Control Solutions Pvt. Ltd.', company_name: 'Trimasys Control Solutions Pvt. Ltd.', phone: '9028963547', email: 'Ashish.Nilkhan@trimasyscontrol.com', address: 'Bhosari', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 15, client_name: 'Mahabal Metals', company_name: 'Mahabal Metals', phone: '8087222185', email: 'vinayak.lamdade@mahabal.in', address: 'Sangli', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 16, client_name: 'Arete Engineering Pvt Ltd', company_name: 'Arete Engineering Pvt Ltd', phone: '9767101300', email: 'areteengineering82@gmail.com', address: 'Bhosari', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 17, client_name: 'Autologic Industries', company_name: 'Autologic Industries', phone: '9999985012', email: 'info@autologicindustries.com', address: 'Delhi', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 18, client_name: 'Sany Heavy Vehicles', company_name: 'Sany Heavy Vehicles', phone: '9011081130', email: 'ajay.pawar@sanygroup.com', address: 'Pune', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 19, client_name: 'Klassic Wheels Ltd', company_name: 'Klassic Wheels Ltd', phone: '9359195335', email: 'r.choudaki@klassicwheels.com', address: 'Ahmednagar', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' },
+            { id: 20, client_name: 'Kulkarni Engineers', company_name: 'Kulkarni Engineers', phone: '9890663971', email: 'kulkarni.engineers@gmail.com', address: 'Kothrud', gst_no: '', status: 'active', created_at: '2025-09-12T00:00:00.000Z' }
+        ];
+        let allClients = JSON.parse(localStorage.getItem(CLIENT_STORAGE_KEY) || '[]');
+        let filteredClients = [];
+
+        const byId = (id) => document.getElementById(id);
+        const tableBody = byId('clientsTableBody');
+        const cardsGrid = byId('cardsGrid');
+
+        async function fetchClients() {
+            if (window.location.protocol === 'file:') {
+                allClients = JSON.parse(localStorage.getItem(CLIENT_STORAGE_KEY) || '[]');
+                applyFilters();
+                return;
+            }
+            try {
+                const response = await fetch('/api/clients');
+                const data = await response.json();
+                allClients = data.clients || [];
+                localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(allClients));
+                applyFilters();
+            } catch (error) {
+                allClients = JSON.parse(localStorage.getItem(CLIENT_STORAGE_KEY) || '[]');
+                applyFilters();
+            }
+        }
+
+        function applyFilters() {
+            const q = byId('searchInput').value.trim().toLowerCase();
+            const status = byId('statusFilter').value;
+            filteredClients = allClients.filter(c => {
+                const hay = `${c.client_name} ${c.company_name} ${c.phone} ${c.email} ${c.address} ${c.gst_no}`.toLowerCase();
+                return (!q || hay.includes(q)) && (!status || c.status === status);
+            });
+            const activeCount = allClients.filter(c => (c.status || '').toLowerCase() === 'active').length;
+            document.getElementById('clientSummary').innerHTML = `
+                <strong>Client Summary:</strong> Total clients <strong>${allClients.length}</strong>, active clients <strong>${activeCount}</strong>, 
+                currently visible <strong>${filteredClients.length}</strong>.
+            `;
+            renderCards();
+            renderTable();
+        }
+
+        function renderCards() {
+            cardsGrid.innerHTML = filteredClients.map(c => `
+                <article id="client-card-${c.id}" class="bg-white rounded-xl shadow p-4 border border-gray-100">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-gray-800">${c.client_name || '-'}</h3>
+                        <span class="text-xs px-2 py-1 rounded-full ${c.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'}">${c.status}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">${c.company_name || '-'}</p>
+                    <div class="text-xs text-gray-500 mt-3 space-y-1">
+                        <p><i class="fas fa-phone mr-1"></i>${c.phone || '-'}</p>
+                        <p><i class="fas fa-envelope mr-1"></i>${c.email || '-'}</p>
+                        <p><i class="fas fa-location-dot mr-1"></i>${c.address || '-'}</p>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <button data-edit-id="${c.id}" class="py-2 rounded bg-blue-600 text-white text-sm">Edit</button>
+                        <button data-pdf-id="${c.id}" class="py-2 rounded bg-red-600 text-white text-sm">PDF</button>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function rowInput(client, field, type = 'text') {
+            return `<input data-inline-id="${client.id}" data-field="${field}" type="${type}" value="${client[field] || ''}" class="w-full border rounded px-2 py-1">`;
+        }
+
+        function renderTable() {
+            tableBody.innerHTML = filteredClients.map(c => `
+                <tr class="border-t">
+                    <td class="px-3 py-2">${c.id}</td>
+                    <td class="px-3 py-2">${rowInput(c, 'client_name')}</td>
+                    <td class="px-3 py-2">${rowInput(c, 'company_name')}</td>
+                    <td class="px-3 py-2">${rowInput(c, 'phone')}</td>
+                    <td class="px-3 py-2">${rowInput(c, 'email')}</td>
+                    <td class="px-3 py-2">${rowInput(c, 'address')}</td>
+                    <td class="px-3 py-2">${rowInput(c, 'gst_no')}</td>
+                    <td class="px-3 py-2">
+                        <select data-inline-id="${c.id}" data-field="status" class="w-full border rounded px-2 py-1">
+                            <option value="active" ${c.status === 'active' ? 'selected' : ''}>active</option>
+                            <option value="inactive" ${c.status === 'inactive' ? 'selected' : ''}>inactive</option>
+                        </select>
+                    </td>
+                    <td class="px-3 py-2">${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td class="px-3 py-2">
+                        <button data-delete-id="${c.id}" class="text-red-600 text-xs">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function createOrUpdateClient(payload, id = '') {
+            if (window.location.protocol === 'file:') {
+                if (id) {
+                    allClients = allClients.map(item => item.id === Number(id) ? { ...item, ...payload } : item);
+                } else {
+                    const nextId = allClients.length ? Math.max(...allClients.map(item => Number(item.id) || 0)) + 1 : 1;
+                    allClients.unshift({ id: nextId, ...payload, created_at: new Date().toISOString() });
+                }
+                localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(allClients));
+                return { success: true };
+            }
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/clients/${id}` : '/api/clients';
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error('Save failed');
+            return response.json();
+        }
+
+        async function removeClient(id) {
+            if (window.location.protocol === 'file:') {
+                allClients = allClients.filter(item => item.id !== id);
+                localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(allClients));
+                return;
+            }
+            const response = await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Delete failed');
+        }
+
+        function openModal(client = null) {
+            byId('clientId').value = client?.id || '';
+            byId('clientName').value = client?.client_name || '';
+            byId('companyName').value = client?.company_name || '';
+            byId('phone').value = client?.phone || '';
+            byId('email').value = client?.email || '';
+            byId('address').value = client?.address || '';
+            byId('gstNo').value = client?.gst_no || '';
+            byId('status').value = client?.status || 'active';
+            byId('clientModal').classList.remove('hidden');
+            byId('clientModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            byId('clientModal').classList.add('hidden');
+            byId('clientModal').classList.remove('flex');
+        }
+
+        function exportExcel() {
+            const worksheet = XLSX.utils.json_to_sheet(filteredClients);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Clients');
+            XLSX.writeFile(workbook, 'clients.xlsx');
+        }
+
+        function exportCsv() {
+            const csv = Papa.unparse(filteredClients);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'clients.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function normalizeImportedClient(row, index) {
+            const getValue = (obj, keys) => {
+                for (const key of keys) {
+                    if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '') return String(obj[key]).trim();
+                    const matchKey = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
+                    if (matchKey && String(obj[matchKey]).trim() !== '') return String(obj[matchKey]).trim();
+                }
+                return '';
+            };
+
+            return {
+                id: Number(getValue(row, ['id'])) || (Date.now() + index),
+                client_name: getValue(row, ['client_name', 'client name', 'name']),
+                company_name: getValue(row, ['company_name', 'company name', 'company']),
+                phone: getValue(row, ['phone', 'mobile']),
+                email: getValue(row, ['email', 'mail']),
+                address: getValue(row, ['address', 'area', 'location']),
+                gst_no: getValue(row, ['gst_no', 'gst', 'gst no']),
+                status: (getValue(row, ['status']) || 'active').toLowerCase(),
+                created_at: getValue(row, ['created_at', 'created at']) || new Date().toISOString()
+            };
+        }
+
+        async function importClientsFromFile(file) {
+            const ext = file.name.toLowerCase().split('.').pop();
+            if (ext === 'csv') {
+                const text = await file.text();
+                const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+                return (parsed.data || []).map((row, index) => normalizeImportedClient(row, index))
+                    .filter(client => client.client_name || client.company_name || client.email || client.phone);
+            }
+
+            const buffer = await file.arrayBuffer();
+            const workbook = XLSX.read(buffer, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            return rows.map((row, index) => normalizeImportedClient(row, index))
+                .filter(client => client.client_name || client.company_name || client.email || client.phone);
+        }
+
+        async function getLogoDataUrl() {
+            return new Promise((resolve) => {
+                const image = new Image();
+                image.crossOrigin = 'anonymous';
+                image.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(image, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                image.onerror = () => resolve(null);
+                image.src = '/images/s2r2-logo.jpg';
+            });
+        }
+
+        function initThemeToggle() {
+            const body = document.body;
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            const toggleIcon = document.getElementById('themeToggleIcon');
+            const storedTheme = localStorage.getItem('themeMode') || 'light';
+            if (storedTheme === 'dark') body.classList.add('dark-mode');
+            toggleIcon.className = body.classList.contains('dark-mode') ? 'fas fa-sun' : 'fas fa-moon';
+            toggleBtn?.addEventListener('click', () => {
+                body.classList.toggle('dark-mode');
+                const dark = body.classList.contains('dark-mode');
+                localStorage.setItem('themeMode', dark ? 'dark' : 'light');
+                toggleIcon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+
+        async function exportSingleClientPdf(clientId) {
+            const client = filteredClients.find(c => c.id === clientId) || allClients.find(c => c.id === clientId);
+            if (!client) return;
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const logoDataUrl = await getLogoDataUrl();
+            if (logoDataUrl) pdf.addImage(logoDataUrl, 'PNG', 150, 10, 40, 20);
+            pdf.setFontSize(14);
+            pdf.text('Inventory Management System | S2R2', 14, 16);
+            pdf.setFontSize(11);
+            pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 24);
+            const entries = [
+                ['Client Name', client.client_name || '-'],
+                ['Company', client.company_name || '-'],
+                ['Phone', client.phone || '-'],
+                ['Email', client.email || '-'],
+                ['Address', client.address || '-'],
+                ['GST No', client.gst_no || '-'],
+                ['Status', client.status || '-']
+            ];
+            let y = 38;
+            entries.forEach(([k, v]) => { pdf.text(`${k}: ${v}`, 14, y); y += 8; });
+            pdf.save(`client-${client.id}.pdf`);
+        }
+
+        async function exportAllClientsPdf() {
+            let payload;
+            if (window.location.protocol === 'file:') {
+                payload = { clients: filteredClients, generated_at: new Date().toISOString() };
+            } else {
+                const response = await fetch('/api/clients/export/pdf');
+                payload = await response.json();
+            }
+            const rows = (payload.clients || []).map(c => [c.id, c.client_name, c.company_name, c.phone, c.email, c.status]);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const logoDataUrl = await getLogoDataUrl();
+            if (logoDataUrl) doc.addImage(logoDataUrl, 'PNG', 150, 8, 40, 20);
+            doc.setFontSize(14);
+            doc.text('Inventory Management System | S2R2', 14, 14);
+            doc.setFontSize(10);
+            doc.text(`Generated: ${new Date(payload.generated_at || Date.now()).toLocaleString()}`, 14, 21);
+            doc.autoTable({
+                startY: 28,
+                head: [['ID', 'Client Name', 'Company', 'Phone', 'Email', 'Status']],
+                body: rows,
+                styles: { fontSize: 8 },
+                didDrawPage: (data) => {
+                    doc.setFontSize(8);
+                    doc.text(`Page ${doc.internal.getNumberOfPages()}`, data.settings.margin.left, doc.internal.pageSize.height - 5);
+                }
+            });
+            doc.save('clients-all.pdf');
+        }
+
+        byId('clientForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = {
+                client_name: byId('clientName').value.trim(),
+                company_name: byId('companyName').value.trim(),
+                phone: byId('phone').value.trim(),
+                email: byId('email').value.trim(),
+                address: byId('address').value.trim(),
+                gst_no: byId('gstNo').value.trim(),
+                status: byId('status').value
+            };
+            const id = byId('clientId').value;
+            await createOrUpdateClient(payload, id);
+            closeModal();
+            await fetchClients();
+        });
+
+        byId('cardsGrid').addEventListener('click', (event) => {
+            const editId = Number(event.target.closest('[data-edit-id]')?.dataset.editId);
+            const pdfId = Number(event.target.closest('[data-pdf-id]')?.dataset.pdfId);
+            if (editId) openModal(allClients.find(c => c.id === editId));
+            if (pdfId) exportSingleClientPdf(pdfId);
+        });
+
+        tableBody.addEventListener('change', async (event) => {
+            const target = event.target.closest('[data-inline-id]');
+            if (!target) return;
+            const id = Number(target.dataset.inlineId);
+            const field = target.dataset.field;
+            await createOrUpdateClient({ [field]: target.value }, id);
+            await fetchClients();
+        });
+
+        tableBody.addEventListener('click', async (event) => {
+            const deleteId = Number(event.target.closest('[data-delete-id]')?.dataset.deleteId);
+            if (!deleteId) return;
+            if (!confirm('Delete this client?')) return;
+            await removeClient(deleteId);
+            await fetchClients();
+        });
+
+        byId('searchInput').addEventListener('input', applyFilters);
+        byId('statusFilter').addEventListener('change', applyFilters);
+        byId('addClientBtn').addEventListener('click', () => openModal(null));
+        byId('closeModalBtn').addEventListener('click', closeModal);
+        byId('cancelBtn').addEventListener('click', closeModal);
+        byId('exportExcelBtn').addEventListener('click', exportExcel);
+        byId('importClientsBtn').addEventListener('click', () => byId('importClientsInput').click());
+        byId('importClientsInput').addEventListener('change', async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const importedClients = await importClientsFromFile(file);
+            const existingEmails = new Set(allClients.map(client => (client.email || '').toLowerCase()).filter(Boolean));
+            const merged = [...allClients];
+            importedClients.forEach((client) => {
+                const emailKey = (client.email || '').toLowerCase();
+                if (emailKey && existingEmails.has(emailKey)) return;
+                merged.push(client);
+                if (emailKey) existingEmails.add(emailKey);
+            });
+            allClients = merged;
+            localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(allClients));
+            applyFilters();
+            event.target.value = '';
+        });
+        byId('exportAllPdfBtn').addEventListener('click', exportAllClientsPdf);
+        byId('printBtn').addEventListener('click', () => window.print());
+
+        document.getElementById('menuToggle')?.addEventListener('click', () => document.querySelector('.sidebar').classList.toggle('active'));
+        document.getElementById('closeSidebar')?.addEventListener('click', () => document.querySelector('.sidebar').classList.remove('active'));
+
+        if (localStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'login.html';
+        const username = localStorage.getItem('username') || 'User';
+        byId('username').textContent = username.charAt(0).toUpperCase() + username.slice(1);
+        const userMenuButton = byId('userMenuButton');
+        const userMenu = byId('userMenu');
+        const logoutBtn = byId('logoutBtn');
+        userMenuButton?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            userMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => userMenu?.classList.add('hidden'));
+        logoutBtn?.addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('username');
+            localStorage.removeItem('loginTime');
+            window.location.href = 'login.html';
+        });
+
+        if (!allClients.length) {
+            allClients = LEGACY_CLIENTS.map((client, index) => ({ ...client, id: index + 1 }));
+            localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(allClients));
+        }
+        fetchClients();
+        setInterval(fetchClients, 15000);
+        initThemeToggle();
+    </script>
+</body>
+</html>
+

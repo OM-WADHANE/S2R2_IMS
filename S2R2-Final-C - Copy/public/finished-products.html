@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finished Products - Inventory Management System | S2R2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body class="bg-gray-50">
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="flex items-center justify-between p-4 gap-3">
+            <div class="flex items-center gap-2 md:gap-4 min-w-0">
+                <button type="button" id="menuToggle" class="md:hidden text-white p-2 rounded-lg hover:bg-white/10" aria-label="Open menu">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <button type="button" id="sidebarCollapse" class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-white/90 hover:bg-white/10 transition shrink-0" aria-expanded="true" aria-label="Collapse navigation" title="Collapse menu">
+                    <i class="fas fa-chevron-left text-sm sidebar-collapse-icon-expanded"></i>
+                    <i class="fas fa-chevron-right text-sm sidebar-collapse-icon-collapsed hidden"></i>
+                </button>
+                <div class="brand-logo" aria-label="S2R2 Logo" role="img"></div>
+            </div>
+            <h1 class="text-sm md:text-xl font-bold text-center flex-1">Inventory Management System | S2R2</h1>
+            <div class="flex items-center gap-2">
+                <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle theme" aria-label="Toggle theme">
+                    <i id="themeToggleIcon" class="fas fa-moon"></i>
+                </button>
+                <div class="relative">
+                    <button id="userMenuButton" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-lg px-2 py-1">
+                    <i class="fas fa-user-circle text-xl"></i>
+                    <span class="hidden md:inline text-sm font-medium" id="username">Admin</span>
+                    <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded-lg shadow-lg z-50">
+                        <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-lg text-sm">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-col md:flex-row">
+        <aside class="sidebar app-sidebar bg-white min-h-screen p-4 border-r shadow-sm">
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-6 gap-2 min-h-[1.75rem]">
+                    <h2 class="sidebar-title text-lg font-semibold">Navigation</h2>
+                    <button type="button" id="closeSidebar" class="md:hidden text-gray-500 p-1 rounded hover:bg-gray-100" aria-label="Close menu">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <nav aria-label="Main">
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100" title="Dashboard"><i class="fas fa-tachometer-alt nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Dashboard</span></a></li>
+                        <li><a href="raw-materials.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100" title="Raw Materials"><i class="fas fa-truck nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Raw Materials</span></a></li>
+                        <li><a href="finished-products.html" class="nav-link flex items-center p-3 rounded-lg bg-blue-50 text-blue-600" title="Finished Products"><i class="fas fa-cube nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Finished Products</span></a></li>
+                        <li><a href="client-base.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100" title="Clients"><i class="fas fa-users nav-icon shrink-0 w-5 text-center mr-3"></i><span class="nav-label">Clients</span></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-6">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Finished Products</h2>
+                <p class="text-gray-600">Editable and export-ready finished products inventory</p>
+            </div>
+
+            <section class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+                    <div class="xl:col-span-4 relative">
+                        <input id="searchInput" type="text" placeholder="Search by name, unit, or status"
+                            class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                    <div class="xl:col-span-2">
+                        <select id="statusFilter" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Status</option>
+                            <option value="Active">Active</option>
+                            <option value="Hold">Hold</option>
+                        </select>
+                    </div>
+                    <div class="xl:col-span-6 grid grid-cols-2 lg:grid-cols-4 gap-2">
+                        <button id="exportExcelBtn" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700"><i class="fas fa-file-excel mr-1"></i>Export Excel</button>
+                        <button id="exportCsvBtn" class="px-3 py-2 rounded-lg bg-sky-600 text-white text-sm hover:bg-sky-700"><i class="fas fa-file-csv mr-1"></i>Export CSV</button>
+                        <button id="downloadCardsPdfBtn" class="px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700"><i class="fas fa-file-pdf mr-1"></i>All Cards PDF</button>
+                        <button id="resetBtn" class="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm hover:bg-gray-200"><i class="fas fa-filter-circle-xmark mr-1"></i>Reset</button>
+                    </div>
+                </div>
+            </section>
+            <section id="finishedSummary" class="bg-white rounded-xl shadow-md p-4 mb-6 text-sm text-gray-700"></section>
+
+            <section class="mb-6">
+                <div id="productsGrid" class="grid md:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+            </section>
+
+            <section class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="px-4 py-3 border-b bg-gray-50">
+                    <h3 class="font-semibold text-gray-700">Table View</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="text-left px-4 py-3">Name</th>
+                                <th class="text-left px-4 py-3">Qty</th>
+                                <th class="text-left px-4 py-3">Unit</th>
+                                <th class="text-left px-4 py-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div id="emptyState" class="hidden text-center py-12">
+                <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">No finished products found</p>
+            </div>
+        </main>
+    </div>
+
+    <div id="editModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-semibold">Edit Finished Product</h4>
+                <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="editForm" class="space-y-3">
+                <input type="hidden" id="editId">
+                <div><label class="text-sm text-gray-600">Name</label><input id="editName" class="w-full border rounded-lg px-3 py-2" required></div>
+                <div><label class="text-sm text-gray-600">Qty</label><input id="editQty" type="number" min="0" class="w-full border rounded-lg px-3 py-2" required></div>
+                <div><label class="text-sm text-gray-600">Unit</label><input id="editUnit" class="w-full border rounded-lg px-3 py-2" required></div>
+                <div>
+                    <label class="text-sm text-gray-600">Status</label>
+                    <select id="editStatus" class="w-full border rounded-lg px-3 py-2">
+                        <option value="Active">Active</option>
+                        <option value="Hold">Hold</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="cancelEditBtn" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/sidebar-nav.js"></script>
+    <script>
+        const STORAGE_KEY = 'finishedProductsInventoryV2';
+        const seedProducts = [
+            { id: 1, name: 'Iotzee', qty: 16, unit: 'Box', status: 'Active', category: 'Finished Products' },
+            { id: 2, name: 'Display', qty: 10, unit: 'Box', status: 'Active', category: 'Finished Products' },
+            { id: 3, name: 'Display Stand', qty: 9, unit: 'Box', status: 'Active', category: 'Finished Products' },
+            { id: 4, name: 'Hold-on Hold Kit', qty: 20, unit: 'Complete', status: 'Active', category: 'Finished Products' }
+        ];
+
+        let finishedProducts = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || seedProducts;
+        let filteredProducts = [...finishedProducts];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(finishedProducts));
+
+        function saveProducts() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(finishedProducts));
+        }
+
+        function statusBadge(status) {
+            return status === 'Active'
+                ? '<span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-semibold">Active</span>'
+                : '<span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full font-semibold">Hold</span>';
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            const tableBody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const totalQty = finishedProducts.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+            const readyCount = finishedProducts.filter(item => (item.status || '').toLowerCase() === 'active').length;
+            const visibleQty = filteredProducts.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+            document.getElementById('finishedSummary').innerHTML = `
+                <strong>Finished Summary:</strong> Total products <strong>${finishedProducts.length}</strong>, total quantity <strong>${totalQty}</strong>, 
+                ready stock <strong>${readyCount}</strong>, visible filtered quantity <strong>${visibleQty}</strong>.
+            `;
+
+            if (!filteredProducts.length) {
+                grid.innerHTML = '';
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filteredProducts.map(product => `
+                <article id="product-card-${product.id}" class="bg-white rounded-xl shadow-md hover:shadow-xl transition p-4 border border-gray-100">
+                    <div class="flex items-start justify-between mb-3">
+                        <h3 class="font-bold text-gray-800">${product.name}</h3>
+                        ${statusBadge(product.status)}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+                        <div><p class="text-gray-500">Qty</p><p class="font-semibold text-blue-600">${product.qty}</p></div>
+                        <div><p class="text-gray-500">Unit</p><p class="font-semibold">${product.unit}</p></div>
+                        <div><p class="text-gray-500">Category</p><p class="font-semibold">${product.category}</p></div>
+                        <div><p class="text-gray-500">ID</p><p class="font-semibold">FP-${product.id}</p></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button data-edit-id="${product.id}" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm"><i class="fas fa-edit mr-1"></i>Edit</button>
+                        <button data-pdf-id="${product.id}" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 text-sm"><i class="fas fa-download mr-1"></i>Download</button>
+                    </div>
+                </article>
+            `).join('');
+
+            tableBody.innerHTML = filteredProducts.map(product => `
+                <tr class="border-t">
+                    <td class="px-4 py-3"><input data-inline-id="${product.id}" data-field="name" value="${product.name}" class="w-full border rounded px-2 py-1"></td>
+                    <td class="px-4 py-3"><input data-inline-id="${product.id}" data-field="qty" type="number" min="0" value="${product.qty}" class="w-full border rounded px-2 py-1"></td>
+                    <td class="px-4 py-3"><input data-inline-id="${product.id}" data-field="unit" value="${product.unit}" class="w-full border rounded px-2 py-1"></td>
+                    <td class="px-4 py-3">
+                        <select data-inline-id="${product.id}" data-field="status" class="w-full border rounded px-2 py-1">
+                            <option value="Active" ${product.status === 'Active' ? 'selected' : ''}>Active</option>
+                            <option value="Hold" ${product.status === 'Hold' ? 'selected' : ''}>Hold</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            filteredProducts = finishedProducts.filter(item => {
+                const matchText = `${item.name} ${item.unit} ${item.status}`.toLowerCase();
+                return (!searchTerm || matchText.includes(searchTerm)) && (!status || item.status === status);
+            });
+            renderProducts();
+        }
+
+        function updateProduct(id, updates) {
+            finishedProducts = finishedProducts.map(item => item.id === id ? { ...item, ...updates } : item);
+            saveProducts();
+            applyFilters();
+        }
+
+        function openEditModal(id) {
+            const product = finishedProducts.find(item => item.id === id);
+            if (!product) return;
+            document.getElementById('editId').value = product.id;
+            document.getElementById('editName').value = product.name;
+            document.getElementById('editQty').value = product.qty;
+            document.getElementById('editUnit').value = product.unit;
+            document.getElementById('editStatus').value = product.status;
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function exportExcel() {
+            const worksheet = XLSX.utils.json_to_sheet(filteredProducts);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Finished Products');
+            XLSX.writeFile(workbook, 'finished-products.xlsx');
+        }
+
+        function exportCsv() {
+            const csv = Papa.unparse(filteredProducts);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'finished-products.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function downloadCardPDF(id) {
+            const card = document.getElementById(`product-card-${id}`);
+            if (!card) return;
+            const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff' });
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const width = 190;
+            const height = (canvas.height * width) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 10, 10, width, height);
+            const item = finishedProducts.find(p => p.id === id);
+            pdf.save(`${(item?.name || 'product').replace(/\s+/g, '-').toLowerCase()}.pdf`);
+        }
+
+        async function downloadAllCardsPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            for (let i = 0; i < filteredProducts.length; i += 1) {
+                const card = document.getElementById(`product-card-${filteredProducts[i].id}`);
+                if (!card) continue;
+                const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff' });
+                const imgData = canvas.toDataURL('image/png');
+                const width = 190;
+                const height = (canvas.height * width) / canvas.width;
+                if (i !== 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 10, 10, width, Math.min(height, 277));
+            }
+            pdf.save('finished-product-cards.pdf');
+        }
+
+        function initThemeToggle() {
+            const body = document.body;
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            const toggleIcon = document.getElementById('themeToggleIcon');
+            const storedTheme = localStorage.getItem('themeMode') || 'light';
+            if (storedTheme === 'dark') body.classList.add('dark-mode');
+            toggleIcon.className = body.classList.contains('dark-mode') ? 'fas fa-sun' : 'fas fa-moon';
+            toggleBtn?.addEventListener('click', () => {
+                body.classList.toggle('dark-mode');
+                const dark = body.classList.contains('dark-mode');
+                localStorage.setItem('themeMode', dark ? 'dark' : 'light');
+                toggleIcon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            applyFilters();
+        });
+
+        document.getElementById('productsGrid').addEventListener('click', (event) => {
+            const editId = event.target.closest('[data-edit-id]')?.dataset.editId;
+            const pdfId = event.target.closest('[data-pdf-id]')?.dataset.pdfId;
+            if (editId) openEditModal(Number(editId));
+            if (pdfId) downloadCardPDF(Number(pdfId));
+        });
+
+        document.getElementById('tableBody').addEventListener('change', (event) => {
+            const target = event.target.closest('[data-inline-id]');
+            if (!target) return;
+            const id = Number(target.dataset.inlineId);
+            const field = target.dataset.field;
+            const value = field === 'qty' ? Number(target.value) : target.value;
+            updateProduct(id, { [field]: value });
+        });
+
+        document.getElementById('editForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            const id = Number(document.getElementById('editId').value);
+            updateProduct(id, {
+                name: document.getElementById('editName').value.trim(),
+                qty: Number(document.getElementById('editQty').value),
+                unit: document.getElementById('editUnit').value.trim(),
+                status: document.getElementById('editStatus').value
+            });
+            closeEditModal();
+        });
+
+        document.getElementById('closeModalBtn').addEventListener('click', closeEditModal);
+        document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
+        document.getElementById('exportExcelBtn').addEventListener('click', exportExcel);
+        document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
+        document.getElementById('downloadCardsPdfBtn').addEventListener('click', downloadAllCardsPDF);
+
+        document.getElementById('menuToggle')?.addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
+        document.getElementById('closeSidebar')?.addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.remove('active');
+        });
+
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        const username = localStorage.getItem('username') || 'User';
+        document.getElementById('username').textContent = username.charAt(0).toUpperCase() + username.slice(1);
+        const userMenuButton = document.getElementById('userMenuButton');
+        const userMenu = document.getElementById('userMenu');
+        const logoutBtn = document.getElementById('logoutBtn');
+        userMenuButton?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            userMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => userMenu?.classList.add('hidden'));
+        logoutBtn?.addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('username');
+            localStorage.removeItem('loginTime');
+            window.location.href = 'login.html';
+        });
+        const legacyUserTrigger = document.querySelector('img[alt="User"]')?.parentElement;
+        legacyUserTrigger?.addEventListener('click', function() {
+            if (confirm('Do you want to logout?')) {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('username');
+                window.location.href = 'login.html';
+            }
+        });
+
+        applyFilters();
+        initThemeToggle();
+    </script>
+</body>
+</html>

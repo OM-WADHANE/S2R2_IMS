@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Inventory Management System | S2R2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body class="bg-gray-50">
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="flex items-center justify-between p-4 gap-3">
+            <div class="flex items-center gap-2 md:gap-4 min-w-0">
+                <button id="menuToggle" type="button" class="md:hidden text-white p-2 rounded-lg hover:bg-white/10">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <button type="button" id="sidebarCollapse" class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-white/90 hover:bg-white/10 transition shrink-0">
+                    <i class="fas fa-chevron-left text-sm sidebar-collapse-icon-expanded"></i>
+                    <i class="fas fa-chevron-right text-sm sidebar-collapse-icon-collapsed hidden"></i>
+                </button>
+                <div class="brand-logo" aria-label="S2R2 Logo" role="img"></div>
+            </div>
+            <h1 class="text-sm md:text-xl font-bold text-center flex-1">Inventory Management System | S2R2</h1>
+            <div class="flex items-center gap-2">
+                <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle theme" aria-label="Toggle theme">
+                    <i id="themeToggleIcon" class="fas fa-moon"></i>
+                </button>
+                <div class="relative">
+                    <button id="userMenuButton" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-lg px-2 py-1">
+                    <i class="fas fa-user-circle text-xl"></i>
+                    <span id="username" class="hidden md:inline text-sm font-medium">Admin</span>
+                    <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded-lg shadow-lg z-50">
+                        <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-lg text-sm">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-col md:flex-row">
+        <aside class="sidebar app-sidebar bg-white min-h-screen p-4 border-r shadow-sm">
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="sidebar-title text-lg font-semibold">Navigation</h2>
+                    <button type="button" id="closeSidebar" class="md:hidden text-gray-500 p-1 rounded hover:bg-gray-100">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <nav>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="nav-link flex items-center p-3 rounded-lg bg-blue-50 text-blue-600"><i class="fas fa-tachometer-alt nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Dashboard</span></a></li>
+                        <li><a href="raw-materials.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100"><i class="fas fa-truck nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Raw Materials</span></a></li>
+                        <li><a href="finished-products.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100"><i class="fas fa-cube nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Finished Products</span></a></li>
+                        <li><a href="client-base.html" class="nav-link flex items-center p-3 rounded-lg hover:bg-gray-100"><i class="fas fa-users nav-icon w-5 mr-3 text-center"></i><span class="nav-label">Clients</span></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-6 space-y-6">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
+                <div>
+                <h2 class="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+                    <p class="text-gray-600">Live stats synced with database records</p>
+                </div>
+                <div class="w-full lg:w-96 relative">
+                    <input id="globalSearch" class="w-full border rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Search modules or quick links">
+                    <i class="fas fa-search absolute top-3 left-3 text-gray-400"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <button data-href="raw-materials.html" class="stat-card bg-white text-left rounded-xl p-5 shadow hover:shadow-lg transition">
+                    <p class="text-xs text-gray-500">Raw Materials</p>
+                    <p id="rawTotal" class="text-2xl font-bold mt-1">0</p>
+                    <p class="text-xs text-amber-600 mt-1">Low Stock: <span id="rawLow">0</span></p>
+                            </button>
+                <button data-href="finished-products.html" class="stat-card bg-white text-left rounded-xl p-5 shadow hover:shadow-lg transition">
+                    <p class="text-xs text-gray-500">Finished Products</p>
+                    <p id="finishedTotal" class="text-2xl font-bold mt-1">0</p>
+                    <p class="text-xs text-emerald-600 mt-1">Ready Stock: <span id="finishedReady">0</span></p>
+                            </button>
+                <button data-href="client-base.html" class="stat-card bg-white text-left rounded-xl p-5 shadow hover:shadow-lg transition">
+                    <p class="text-xs text-gray-500">Clients</p>
+                    <p id="clientTotal" class="text-2xl font-bold mt-1">0</p>
+                    <p class="text-xs text-sky-600 mt-1">New This Month: <span id="clientNew">0</span></p>
+                            </button>
+                <button class="bg-white text-left rounded-xl p-5 shadow opacity-60 cursor-not-allowed">
+                    <p class="text-xs text-gray-500">Temporary Summary</p>
+                    <p id="alertsCount" class="text-2xl font-bold mt-1">0</p>
+                    <p class="text-xs text-red-600 mt-1">Low Stock Alerts (Quick View)</p>
+                            </button>
+                        </div>
+            <div id="dashboardSummary" class="bg-white rounded-xl shadow p-4 text-sm text-gray-700"></div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                <section class="bg-white rounded-xl shadow p-5 xl:col-span-1">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <a href="raw-materials.html" class="px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm text-center">Go Raw Materials</a>
+                        <a href="finished-products.html" class="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-sm text-center">Go Finished</a>
+                        <a href="client-base.html" class="px-3 py-2 rounded-lg bg-purple-50 text-purple-700 text-sm text-center">Manage Clients</a>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Stock Movement Snapshot</h4>
+                        <div id="stockBars" class="space-y-2"></div>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow p-5 xl:col-span-1">
+                    <h3 class="font-semibold mb-3">Low Stock Alerts</h3>
+                    <div id="lowStockList" class="space-y-2 text-sm text-gray-700"></div>
+                </section>
+
+                <section class="bg-white rounded-xl shadow p-5 xl:col-span-1">
+                    <h3 class="font-semibold mb-3">Recent Activity Feed</h3>
+                    <div id="recentActivityList" class="space-y-3 text-sm text-gray-700"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/sidebar-nav.js"></script>
+    <script>
+        const moduleLinks = [
+            { name: 'Raw Materials', href: 'raw-materials.html' },
+            { name: 'Finished Products', href: 'finished-products.html' },
+            { name: 'Clients', href: 'client-base.html' }
+        ];
+
+        function computeLocalStats() {
+            const rawItems = JSON.parse(localStorage.getItem('rawMaterialsInventoryV2') || '[]');
+            const finishedItems = JSON.parse(localStorage.getItem('finishedProductsInventoryV2') || '[]');
+            const clientItems = JSON.parse(localStorage.getItem('clientsInventoryV1') || '[]');
+            const rawLow = rawItems.filter(item => Number(item.quantity || 0) <= Number(item.min_stock || 0)).length;
+            const finishedReady = finishedItems.filter(item => (item.status || '').toLowerCase() === 'active').length;
+            const clientNew = clientItems.filter(item => {
+                const created = new Date(item.created_at || Date.now());
+                const now = new Date();
+                return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+            }).length;
+            return {
+                raw_materials: { total_items: rawItems.length, low_stock_count: rawLow },
+                finished_products: { total_products: finishedItems.length, ready_stock: finishedReady },
+                clients: { total_clients: clientItems.length, new_this_month: clientNew },
+                low_stock_alerts: rawItems.filter(item => Number(item.quantity || 0) <= Number(item.min_stock || 0)),
+                recent_activity: [
+                    ...rawItems.slice(0, 3).map(x => ({ module: 'raw_material', label: x.name, event_time: x.last_updated || new Date().toISOString() })),
+                    ...finishedItems.slice(0, 3).map(x => ({ module: 'finished_product', label: x.name, event_time: new Date().toISOString() })),
+                    ...clientItems.slice(0, 3).map(x => ({ module: 'client', label: x.client_name || x.company_name || 'Client', event_time: x.created_at || new Date().toISOString() }))
+                ],
+                stock_movement: {
+                    labels: ['Raw Materials', 'Finished Products', 'Clients'],
+                    values: [rawItems.length, finishedItems.length, clientItems.length]
+                }
+            };
+        }
+
+        function initThemeToggle() {
+            const body = document.body;
+            const toggleBtn = document.getElementById('themeToggleBtn');
+            const toggleIcon = document.getElementById('themeToggleIcon');
+            const storedTheme = localStorage.getItem('themeMode') || 'light';
+            if (storedTheme === 'dark') body.classList.add('dark-mode');
+            toggleIcon.className = body.classList.contains('dark-mode') ? 'fas fa-sun' : 'fas fa-moon';
+            toggleBtn?.addEventListener('click', () => {
+                body.classList.toggle('dark-mode');
+                const dark = body.classList.contains('dark-mode');
+                localStorage.setItem('themeMode', dark ? 'dark' : 'light');
+                toggleIcon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+
+        async function loadDashboardStats() {
+            try {
+                let data;
+                if (window.location.protocol === 'file:') {
+                    data = { stats: computeLocalStats(), ...computeLocalStats() };
+                } else {
+                    const response = await fetch('/api/dashboard/stats');
+                    if (!response.ok) throw new Error('Failed dashboard stats');
+                    data = await response.json();
+                }
+                const raw = data.stats?.raw_materials || data.raw_materials || {};
+                const finished = data.stats?.finished_products || data.finished_products || {};
+                const clients = data.stats?.clients || data.clients || {};
+
+                document.getElementById('rawTotal').textContent = raw.total_items || 0;
+                document.getElementById('rawLow').textContent = raw.low_stock_count || 0;
+                document.getElementById('finishedTotal').textContent = finished.total_products || 0;
+                document.getElementById('finishedReady').textContent = finished.ready_stock || 0;
+                document.getElementById('clientTotal').textContent = clients.total_clients || 0;
+                document.getElementById('clientNew').textContent = clients.new_this_month || 0;
+                document.getElementById('alertsCount').textContent = (data.low_stock_alerts || []).length;
+                document.getElementById('dashboardSummary').innerHTML = `
+                    <strong>Summary:</strong> Raw materials total <strong>${raw.total_items || 0}</strong> (${raw.low_stock_count || 0} low stock), 
+                    finished products total <strong>${finished.total_products || 0}</strong> (${finished.ready_stock || 0} ready), 
+                    clients total <strong>${clients.total_clients || 0}</strong> (${clients.new_this_month || 0} new this month).
+                `;
+
+                const lowStockList = document.getElementById('lowStockList');
+                lowStockList.innerHTML = (data.low_stock_alerts || []).length
+                    ? data.low_stock_alerts.map(item => `<div class="border rounded-lg p-2"><div class="font-medium">${item.name}</div><div class="text-xs text-gray-500">Qty ${item.quantity} ${item.unit || ''} | Min ${item.min_stock_level}</div></div>`).join('')
+                    : '<p class="text-sm text-gray-500">No low stock alerts.</p>';
+
+                const recentActivityList = document.getElementById('recentActivityList');
+                recentActivityList.innerHTML = (data.recent_activity || []).map(item => {
+                    const label = item.module.replace('_', ' ');
+                    const date = new Date(item.event_time).toLocaleString();
+                    return `<div class="border-l-4 border-blue-500 pl-3"><div class="font-medium capitalize">${label}</div><div>${item.label}</div><div class="text-xs text-gray-500">${date}</div></div>`;
+                }).join('') || '<p class="text-sm text-gray-500">No recent activity.</p>';
+
+                const values = data.stock_movement?.values || [0, 0, 0];
+                const labels = data.stock_movement?.labels || ['Raw Materials', 'Finished Products', 'Clients'];
+                const maxVal = Math.max(...values, 1);
+                document.getElementById('stockBars').innerHTML = labels.map((label, idx) => {
+                    const val = values[idx] || 0;
+                    const width = Math.max(10, (val / maxVal) * 100);
+                    return `<div><div class="flex justify-between text-xs"><span>${label}</span><span>${val}</span></div><div class="h-2 bg-gray-200 rounded mt-1"><div class="h-2 bg-blue-500 rounded" style="width:${width}%"></div></div></div>`;
+                }).join('');
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.addEventListener('click', () => {
+                window.location.href = card.dataset.href;
+            });
+        });
+
+        document.getElementById('globalSearch').addEventListener('input', (event) => {
+            const query = event.target.value.trim().toLowerCase();
+            const best = moduleLinks.find(link => link.name.toLowerCase().includes(query));
+            document.querySelectorAll('.stat-card').forEach(card => {
+                const active = !query || card.textContent.toLowerCase().includes(query);
+                card.style.opacity = active ? '1' : '0.45';
+            });
+            if (query && best && query.length > 2 && event.inputType === 'insertLineBreak') {
+                window.location.href = best.href;
+            }
+        });
+
+        document.getElementById('menuToggle')?.addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
+        document.getElementById('closeSidebar')?.addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.remove('active');
+        });
+
+        if (localStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'login.html';
+        const username = localStorage.getItem('username') || 'User';
+        document.getElementById('username').textContent = username.charAt(0).toUpperCase() + username.slice(1);
+        const userMenuButton = document.getElementById('userMenuButton');
+        const userMenu = document.getElementById('userMenu');
+        const logoutBtn = document.getElementById('logoutBtn');
+        userMenuButton?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            userMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => userMenu?.classList.add('hidden'));
+        logoutBtn?.addEventListener('click', () => {
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('loginTime');
+                    window.location.href = 'login.html';
+            });
+
+        loadDashboardStats();
+        setInterval(loadDashboardStats, 15000);
+        initThemeToggle();
+    </script>
+</body>
+</html>
